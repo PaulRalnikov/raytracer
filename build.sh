@@ -1,5 +1,4 @@
 #!/usr/bin/env bash
 mkdir build
-cd build
-cmake -DCMAKE_BUILD_TYPE=Release
-cmake --build .
+cmake -DCMAKE_BUILD_TYPE=Release -B build
+cmake --build build
