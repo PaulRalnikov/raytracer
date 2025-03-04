@@ -3,8 +3,8 @@ set(CMAKE_CXX_STANDARD 20)
 
 project(render)
 
-# file(GLOB_RECURSE src "source/*.cpp")
+file(GLOB_RECURSE src "source/*.cpp")
 
 set(TARGET_NAME "${PROJECT_NAME}")
 
-add_executable(${TARGET_NAME} main.cpp)
+add_executable(${TARGET_NAME} ${src} main.cpp)
