@@ -1,2 +1,2 @@
 #!/usr/bin/env bash
-./build/solution "$1" "$2"
+./build/render "$1" "$2"
