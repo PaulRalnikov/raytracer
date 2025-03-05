@@ -20,7 +20,7 @@ std::ostream &operator<<(std::ostream &out, const glm::vec3 v)
     return out << v.x << ' ' << v.y << ' ' << v.z;
 }
 
-std::ostream &operator<<(std::ostream &out, const glm::vec4 v)
+std::ostream &operator<<(std::ostream &out, const glm::quat v)
 {
     return out << v.x << ' ' << v.y << ' ' << v.z << ' ' << v.w;
 }
@@ -41,8 +41,8 @@ std::ifstream &operator>>(std::ifstream &in, glm::vec3 &vec)
     return in;
 }
 
-std::ifstream &operator>>(std::ifstream &in, glm::vec4 &vec)
+std::ifstream &operator>>(std::ifstream &in, glm::quat &q)
 {
-    in >> vec.x >> vec.y >> vec.z >> vec.w;
+    in >> q.x >> q.y >> q.z >> q.w;
     return in;
 }
