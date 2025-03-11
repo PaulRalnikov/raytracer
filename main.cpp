@@ -7,14 +7,19 @@
 #include "glm/gtx/quaternion.hpp"
 #include "source/primitive.hpp"
 #include "source/scene.hpp"
+#include <algorithm>
+
+unsigned char color_to_byte(float color) {
+    return std::round(std::clamp(color * 255, (float)0.0, (float)255.0));
+}
 
 void write_to_output(std::string output_path, std::vector<glm::vec3> pixels, const Scene& scene) {
     std::vector<unsigned char> real_pixels(pixels.size() * 3);
 
     for (size_t i = 0; i < pixels.size(); i++) {
-        real_pixels[i * 3 + 0] = pixels[i].x * 255;
-        real_pixels[i * 3 + 1] = pixels[i].y * 255;
-        real_pixels[i * 3 + 2] = pixels[i].z * 255;
+        real_pixels[i * 3 + 0] = color_to_byte(pixels[i].x);
+        real_pixels[i * 3 + 1] = color_to_byte(pixels[i].y);
+        real_pixels[i * 3 + 2] = color_to_byte(pixels[i].z);
     }
 
     std::ofstream out;
