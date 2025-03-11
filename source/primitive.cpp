@@ -1,4 +1,6 @@
 #include "primitive.hpp"
+#include "../glm/glm.hpp"
+#include "my_glm.hpp"
 
 std::string to_string(PrimitiveType type)
 {
@@ -15,16 +17,6 @@ std::string to_string(PrimitiveType type)
     }
 }
 
-std::ostream &operator<<(std::ostream &out, const glm::vec3 v)
-{
-    return out << v.x << ' ' << v.y << ' ' << v.z;
-}
-
-std::ostream &operator<<(std::ostream &out, const glm::quat v)
-{
-    return out << v.x << ' ' << v.y << ' ' << v.z << ' ' << v.w;
-}
-
 std::ostream &operator<<(std::ostream &out, const Primitive &p)
 {
     out << "Primitive type: " << to_string(p.type) << '\n';
@@ -33,16 +25,4 @@ std::ostream &operator<<(std::ostream &out, const Primitive &p)
     out << "Rotation: " << p.rotation << '\n';
     out << "Color: " << p.color;
     return out;
-}
-
-std::ifstream &operator>>(std::ifstream &in, glm::vec3 &vec)
-{
-    in >> vec.x >> vec.y >> vec.z;
-    return in;
-}
-
-std::ifstream &operator>>(std::ifstream &in, glm::quat &q)
-{
-    in >> q.x >> q.y >> q.z >> q.w;
-    return in;
 }

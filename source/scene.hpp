@@ -1,5 +1,6 @@
 #pragma once
 #include <vector>
+#include "../glm/vec2.hpp"
 #include "primitive.hpp"
 #include "ray.hpp"
 
@@ -20,6 +21,8 @@ public:
     glm::vec3 camera_up;
     glm::vec3 camera_forward;
     float fov_x, fov_y;
+    float tan_fov_x_2;
+    float tan_fov_y_2;
 
     std::vector<Primitive> primitives;
 };

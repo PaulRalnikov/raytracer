@@ -72,6 +72,9 @@ void Scene::readTxt(std::string txt_path) {
         }
     }
 
+    tan_fov_x_2 = tan(fov_x / 2);
+    tan_fov_y_2 = tan_fov_x_2 * height / (float) width;
+
     fov_y = atan(height / (float)width * tan(fov_x / 2)) * 2;
 
     for (auto el : primitives) {
@@ -83,8 +86,8 @@ void Scene::readTxt(std::string txt_path) {
 
 Ray Scene::ray_to_pixel(glm::vec2 pixel) {
     glm::vec3 position(
-        (2 * pixel.x / width - 1) * tan(fov_x / 2),
-        (- 2 * pixel.y / height + 1) * tan(fov_y / 2),
+        (2 * pixel.x / width - 1) * tan_fov_x_2,
+        (- 2 * pixel.y / height + 1) * tan_fov_y_2,
         1
     );
     glm::vec3 direction = glm::normalize(position.x * camera_right + position.y * camera_up + position.z * camera_forward);
