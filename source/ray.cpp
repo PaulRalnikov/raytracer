@@ -25,6 +25,7 @@ static void sort(float& x, float& y) {
 
 std::optional<float> intersect_ray_with_primitive (Ray ray, Primitive primitive) {
     my_quat q_hat = primitive.rotation.inverse();
+    // std::cout << "q hat: " << q_hat << std::endl;
     ray.position -= primitive.position;
     // std::cout << "old ray: " << ray << std::endl;
     ray.position = q_hat * ray.position;
