@@ -16,5 +16,6 @@ struct Light {
     //returns direction from point to light
     glm::vec3 get_direction(glm::vec3 point);
     glm::vec3 get_color(glm::vec3 point);
+    float get_distance(glm::vec3 point);
 };
 

@@ -116,13 +116,15 @@ Ray Scene::ray_to_pixel(glm::vec2 pixel) {
     return Ray(camera_position, direction);
 }
 
-std::optional<std::pair<float, size_t>> Scene::intersect(Ray ray) {
+std::optional<std::pair<float, size_t>>
+Scene::intersect(Ray ray, float max_distance)
+{
     std::optional<std::pair<float, size_t>> intersection = {};
     for (size_t i = 0; i < primitives.size(); i++) {
         auto& primitive = primitives[i];
         std::optional<float> prim_intersect = intersect_ray_with_primitive(ray, primitive);
 
-        if (!prim_intersect.has_value())
+        if (!prim_intersect.has_value() || prim_intersect.value() > max_distance)
             continue;
 
         if (!intersection.has_value() || intersection.value().first > prim_intersect.value()) {
@@ -150,11 +152,22 @@ glm::vec3 Scene::raytrace(Ray ray, int depth) {
     glm::vec3 result = primitive.color * abmient;
 
     for (Light& light : lights) {
-        glm::vec3 direction = light.get_direction(point);
+        glm::vec3 light_direction = light.get_direction(point);
         glm::vec3 light_color = light.get_color(point);
-        float dot = glm::dot(direction, normal);
-        if (dot >= 0)
+        float light_distance = light.get_distance(point);
+
+        //shadow ray
+        static const float SHADOW_BIAS = 1e-4;
+        Ray shadow_ray(point + light_direction * SHADOW_BIAS, light_direction);
+        auto shadow_ray_intersection = intersect(shadow_ray, light_distance);
+
+        float dot = glm::dot(light_direction, normal);
+        bool inside = dot < 0;
+        if (!inside && !shadow_ray_intersection.has_value())
             result += dot * primitive.color * light_color;
+
+        // glm::vec3 reflected_direction = ray.direction - 2 * glm::dot(normal, ray.direction) * normal;
+        // reflected_direction = glm::normalize(reflected_direction);
     }
     return result;
 }

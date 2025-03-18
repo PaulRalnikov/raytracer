@@ -4,6 +4,7 @@
 #include "primitive.hpp"
 #include "ray.hpp"
 #include "light.hpp"
+#include <limits>
 
 struct Scene {
 public:
@@ -12,7 +13,7 @@ public:
     Ray ray_to_pixel(glm::vec2 pixel);
 
     // returns position on the ray and primitive index
-    std::optional<std::pair<float, size_t> > intersect(Ray ray);
+    std::optional<std::pair<float, size_t>> intersect(Ray ray, float max_distance = std::numeric_limits<float>::infinity());
     glm::vec3 raytrace(Ray ray, int depth = 0);
 
     int width, height;
