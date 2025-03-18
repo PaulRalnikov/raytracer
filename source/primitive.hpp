@@ -27,7 +27,7 @@ struct Primitive
     my_quat rotation;
     glm::vec3 color;
     MaterialType material = DIFFUSE;
-    float ior; //only for diffuse materials
+    float ior; //only for diellectric materials
 
     glm::vec3 get_normal(glm::vec3 point);
 };

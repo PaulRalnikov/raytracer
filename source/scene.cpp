@@ -152,38 +152,78 @@ glm::vec3 Scene::raytrace(Ray ray, int depth) {
     glm::vec3 result = primitive.color * abmient;
     static const float SHIFT = 1e-4;
 
+    float normal_direction_cos = glm::dot(normal, ray.direction);
+    bool inside = (normal_direction_cos > 0);
+    glm::vec3 reflected_direction = ray.direction - 2 * normal_direction_cos * normal;
+    reflected_direction = glm::normalize(reflected_direction);
+    Ray reflected_ray(point + reflected_direction * SHIFT, reflected_direction);
+
+
     switch (primitive.material)
     {
-    case (DIELECTRIC):
-    case (DIFFUSE):
-    {
-        for (Light &light : lights)
+        case (DIELECTRIC):
         {
-            glm::vec3 light_direction = light.get_direction(point);
-            glm::vec3 light_color = light.get_color(point);
-            float light_distance = light.get_distance(point);
+            glm::vec3 reflected_color = raytrace(reflected_ray, depth + 1);
 
-            // shadow ray
-            Ray shadow_ray(point + light_direction * SHIFT, light_direction);
-            auto shadow_ray_intersection = intersect(shadow_ray, light_distance);
-            if (shadow_ray_intersection.has_value()) {
-                continue;
+            // Snell's law
+            float mu_1 = 1;
+            float mu_2 = primitive.ior;
+
+            float cos_theta_1 = -normal_direction_cos;
+            if (inside) {
+                normal *= -1;
+                cos_theta_1 *= -1;
+                std::swap(mu_1, mu_2);
             }
 
-            float dot = glm::dot(light_direction, normal);
-            bool inside = dot < 0;
+            float sin_theta_2 = mu_1 / mu_2 * std::sqrt(1 - std::pow(cos_theta_1, 2));
+            if (std::abs(sin_theta_2) > 1) {
+                result += reflected_color;
+                break;
+            }
+            float cos_theta_2 = std::sqrt(1 - std::pow(sin_theta_2, 2));
+
+            glm::vec3 refracted_direction = mu_1 / mu_2 * ray.direction + (cos_theta_1 * mu_1 / mu_2 - cos_theta_2) * normal;
+            refracted_direction = glm::normalize(refracted_direction);
+            Ray refracted_ray(point + refracted_direction * SHIFT, refracted_direction);
+
+            glm::vec3 refracted_color = raytrace(refracted_ray, depth + 1);
             if (!inside)
-                result += dot * primitive.color * light_color;
+                refracted_color *= primitive.color;
+
+            //Shlick's approx
+            float r_0 = std::pow((mu_1 - mu_2) / (mu_1 + mu_2), 2);
+            float r = r_0 + (1 - r_0) * std::pow(1 - cos_theta_1, 5);
+
+            result += r * reflected_color + (1 - r) *refracted_color;
+            break;
         }
-        break;
-    }
-    case (METALLIC):
-    {
-        glm::vec3 reflected_direction = ray.direction - 2 * glm::dot(normal, ray.direction) * normal;
-        reflected_direction = glm::normalize(reflected_direction);
-        Ray reflected_ray(point + reflected_direction * SHIFT, reflected_direction);
-        result += raytrace(reflected_ray, depth + 1) * primitive.color;
-    }
+        case (DIFFUSE):
+        {
+            for (Light &light : lights)
+            {
+                glm::vec3 light_direction = light.get_direction(point);
+                glm::vec3 light_color = light.get_color(point);
+                float light_distance = light.get_distance(point);
+
+                // shadow ray
+                Ray shadow_ray(point + light_direction * SHIFT, light_direction);
+                auto shadow_ray_intersection = intersect(shadow_ray, light_distance);
+                if (shadow_ray_intersection.has_value()) {
+                    continue;
+                }
+
+                float dot = glm::dot(light_direction, normal);
+                if (dot >= 0)
+                    result += dot * primitive.color * light_color;
+            }
+            break;
+        }
+        case (METALLIC):
+        {
+            result += raytrace(reflected_ray, depth + 1) * primitive.color;
+            break;
+        }
     }
     return result;
 }
