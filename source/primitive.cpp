@@ -18,16 +18,16 @@ glm::vec3 Primitive::get_normal(glm::vec3 point) {
             //hack: abs maximal component of (point / geom) is 1; if set zero to others, we get normal
             glm::vec3 hack = point / geom;
             glm::vec3 abs_hack = glm::abs(hack);
-            if (abs_hack.x >= abs_hack.y && abs_hack.x >= abs_hack.z) {
+            if (abs_hack.x >= std::max(abs_hack.y, abs_hack.z)) {
                 hack.y = 0;
                 hack.z = 0;
             }
-            else if (abs_hack.y >= abs_hack.z && abs_hack.x >= abs_hack.z)
+            else if (abs_hack.y >= std::max(abs_hack.x, abs_hack.z))
             {
-                hack.z = 0;
+                hack.x = 0;
                 hack.z = 0;
             }
-            else if (abs_hack.z >= abs_hack.x && abs_hack.x >= abs_hack.y)
+            else if (abs_hack.z >= std::max(abs_hack.x, abs_hack.y))
             {
                 hack.x = 0;
                 hack.y = 0;
