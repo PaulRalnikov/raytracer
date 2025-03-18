@@ -150,24 +150,40 @@ glm::vec3 Scene::raytrace(Ray ray, int depth) {
 
     glm::vec3 normal = primitive.get_normal(point);
     glm::vec3 result = primitive.color * abmient;
+    static const float SHIFT = 1e-4;
 
-    for (Light& light : lights) {
-        glm::vec3 light_direction = light.get_direction(point);
-        glm::vec3 light_color = light.get_color(point);
-        float light_distance = light.get_distance(point);
+    switch (primitive.material)
+    {
+    case (DIELECTRIC):
+    case (DIFFUSE):
+    {
+        for (Light &light : lights)
+        {
+            glm::vec3 light_direction = light.get_direction(point);
+            glm::vec3 light_color = light.get_color(point);
+            float light_distance = light.get_distance(point);
 
-        //shadow ray
-        static const float SHADOW_BIAS = 1e-4;
-        Ray shadow_ray(point + light_direction * SHADOW_BIAS, light_direction);
-        auto shadow_ray_intersection = intersect(shadow_ray, light_distance);
+            // shadow ray
+            Ray shadow_ray(point + light_direction * SHIFT, light_direction);
+            auto shadow_ray_intersection = intersect(shadow_ray, light_distance);
+            if (shadow_ray_intersection.has_value()) {
+                continue;
+            }
 
-        float dot = glm::dot(light_direction, normal);
-        bool inside = dot < 0;
-        if (!inside && !shadow_ray_intersection.has_value())
-            result += dot * primitive.color * light_color;
-
-        // glm::vec3 reflected_direction = ray.direction - 2 * glm::dot(normal, ray.direction) * normal;
-        // reflected_direction = glm::normalize(reflected_direction);
+            float dot = glm::dot(light_direction, normal);
+            bool inside = dot < 0;
+            if (!inside)
+                result += dot * primitive.color * light_color;
+        }
+        break;
+    }
+    case (METALLIC):
+    {
+        glm::vec3 reflected_direction = ray.direction - 2 * glm::dot(normal, ray.direction) * normal;
+        reflected_direction = glm::normalize(reflected_direction);
+        Ray reflected_ray(point + reflected_direction * SHIFT, reflected_direction);
+        result += raytrace(reflected_ray, depth + 1) * primitive.color;
+    }
     }
     return result;
 }
