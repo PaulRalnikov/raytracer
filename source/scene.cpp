@@ -154,6 +154,10 @@ glm::vec3 Scene::raytrace(Ray ray, int depth) {
 
     float normal_direction_cos = glm::dot(normal, ray.direction);
     bool inside = (normal_direction_cos > 0);
+    if (inside) {
+        normal *= -1;
+        normal_direction_cos *= -1;
+    }
     glm::vec3 reflected_direction = ray.direction - 2 * normal_direction_cos * normal;
     reflected_direction = glm::normalize(reflected_direction);
     Ray reflected_ray(point + reflected_direction * SHIFT, reflected_direction);
@@ -171,8 +175,6 @@ glm::vec3 Scene::raytrace(Ray ray, int depth) {
 
             float cos_theta_1 = -normal_direction_cos;
             if (inside) {
-                normal *= -1;
-                cos_theta_1 *= -1;
                 std::swap(mu_1, mu_2);
             }
 
