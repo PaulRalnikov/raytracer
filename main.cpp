@@ -54,12 +54,7 @@ int main(int argc, char *argv[])
     for (int x = 0; x < scene.width; x++) {
         for (int y = 0; y < scene.height; y++) {
             Ray ray = scene.ray_to_pixel(glm::vec2(x + 0.5, y + 0.5));
-            bool print = false;
-            if (cnt++ % mod == 0) {
-                print = true;
-                std::cout << "ray: " << ray << std::endl;
-            }
-            pixels[y * scene.width + x] =  scene.raytrace(ray, print);
+            pixels[y * scene.width + x] =  scene.raytrace(ray);
         }
     }
 

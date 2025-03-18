@@ -19,7 +19,6 @@ my_quat my_quat::inverse() const {
 
 glm::vec3 my_quat::operator* (const glm::vec3& v) {
     my_quat q_hat = inverse();
-    // std::cout << "q_hat from operator* is " << q_hat << std::endl;
     my_quat res = this->operator*(my_quat(v, 0)) * q_hat;
     return res.vec;
 }
