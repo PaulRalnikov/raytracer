@@ -12,4 +12,9 @@ struct Light {
     glm::vec3 intensivity;
     glm::vec3 geom; //direction for directed light od position for point light
     glm::vec3 attenuation;
+
+    //returns direction from point to light
+    glm::vec3 get_direction(glm::vec3 point);
+    glm::vec3 get_color(glm::vec3 point);
 };
+

@@ -3,6 +3,7 @@
 #include <cmath>
 #include "../glm/glm.hpp"
 #include <functional>
+#include <algorithm>
 
 void Scene::readTxt(std::string txt_path) {
     std::ifstream in;
@@ -69,7 +70,7 @@ void Scene::readTxt(std::string txt_path) {
         }
         else if (command == "RAY_DEPTH")
             {
-                in >> ray_depth;
+                in >> max_ray_depth;
             }
         else if (command == "AMBIENT_LIGHT") {
             in >> abmient;
@@ -131,9 +132,29 @@ std::optional<std::pair<float, size_t>> Scene::intersect(Ray ray) {
     return intersection;
 }
 
-glm::vec3 Scene::raytrace(Ray ray) {
+glm::vec3 Scene::raytrace(Ray ray, int depth) {
+    if (depth >= max_ray_depth) {
+        return background_color;
+    }
     auto intersection = intersect(ray);
-    if (intersection.has_value())
-        return primitives[intersection.value().second].color;
-    return background_color;
+    if (!intersection.has_value())
+        return background_color;
+
+    size_t i = intersection.value().second;
+    Primitive &primitive = primitives[i];
+
+    float t = intersection.value().first; //ray position
+    glm::vec3 point = ray.position + ray.direction * t;
+
+    glm::vec3 normal = primitive.get_normal(point);
+    glm::vec3 result = primitive.color * abmient;
+
+    for (Light& light : lights) {
+        glm::vec3 direction = light.get_direction(point);
+        glm::vec3 light_color = light.get_color(point);
+        float dot = glm::dot(direction, normal);
+        if (dot >= 0)
+            result += dot * primitive.color * light_color;
+    }
+    return result;
 }

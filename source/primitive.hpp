@@ -28,6 +28,8 @@ struct Primitive
     glm::vec3 color;
     MaterialType material = DIFFUSE;
     float ior; //only for diffuse materials
+
+    glm::vec3 get_normal(glm::vec3 point);
 };
 
 

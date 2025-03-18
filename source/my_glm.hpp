@@ -24,4 +24,6 @@ std::ifstream &operator>>(std::ifstream &in, glm::vec3 &vec);
 
 std::ifstream &operator>>(std::ifstream &in, my_quat &q);
 
+float vec_max(glm::vec3 v);
 
+float vec_min(glm::vec3 v);

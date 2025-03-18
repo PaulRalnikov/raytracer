@@ -1,6 +1,6 @@
 #include "ray.hpp"
 #include <cmath>
-#include <algorithm>
+#include "my_glm.hpp"
 #include "../glm/glm.hpp"
 #include "../glm/gtx/quaternion.hpp"
 #include "../glm/mat4x4.hpp"
@@ -25,13 +25,9 @@ static void sort(float& x, float& y) {
 
 std::optional<float> intersect_ray_with_primitive (Ray ray, Primitive primitive) {
     my_quat q_hat = primitive.rotation.inverse();
-    // std::cout << "q hat: " << q_hat << std::endl;
     ray.position -= primitive.position;
-    // std::cout << "old ray: " << ray << std::endl;
     ray.position = q_hat * ray.position;
     ray.direction = q_hat * ray.direction;
-    // std::cout << "new ray: " << ray << std::endl;
-    // std::cout << "=================================" << std::endl;
 
     switch (primitive.type)
     {
@@ -75,8 +71,8 @@ std::optional<float> intersect_ray_with_primitive (Ray ray, Primitive primitive)
             sort(t_vec1.y, t_vec2.y);
             sort(t_vec1.z, t_vec2.z);
 
-            float t1 = std::max({t_vec1.x, t_vec1.y, t_vec1.z});
-            float t2 = std::min({t_vec2.x, t_vec2.y, t_vec2.z});
+            float t1 = vec_max(t_vec1);
+            float t2 = vec_min(t_vec2);
             if (t1 > t2)
                 return {};
             if (t1 > 0 && t2 > 0)

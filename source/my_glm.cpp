@@ -1,6 +1,7 @@
 #include "my_glm.hpp"
 #include <iostream>
 #include <fstream>
+#include <algorithm>
 #include "../glm/vec3.hpp"
 #include "../glm/glm.hpp"
 
@@ -43,4 +44,13 @@ std::ostream &operator<<(std::ostream &out, const glm::vec3 v)
 std::ostream &operator<<(std::ostream &out, const my_quat q)
 {
     return out << q.vec << ' ' << q.w;
+}
+
+float vec_max(glm::vec3 v) {
+    return std::max({v.x, v.y, v.z});
+}
+
+float vec_min(glm::vec3 v)
+{
+    return std::min({v.x, v.y, v.z});
 }
