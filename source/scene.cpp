@@ -176,13 +176,13 @@ glm::vec3 Scene::raytrace(Ray ray, int depth) {
                 std::swap(mu_1, mu_2);
             }
 
-            float sin_theta_2 = mu_1 / mu_2 * std::sqrt(1 - std::pow(cos_theta_1, 2));
+            float sin_theta_2 = mu_1 / mu_2 * std::sqrt(1 - cos_theta_1 * cos_theta_1);
             if (std::abs(sin_theta_2) > 1) {
                 return reflected_color;
             }
-            float cos_theta_2 = std::sqrt(1 - std::pow(sin_theta_2, 2));
+            float cos_theta_2 = std::sqrt(1 - sin_theta_2 * sin_theta_2);
 
-            glm::vec3 refracted_direction = mu_1 / mu_2 * ray.direction + (cos_theta_1 * mu_1 / mu_2 - cos_theta_2) * normal;
+            glm::vec3 refracted_direction = mu_1 / mu_2 * ray.direction + (mu_1 / mu_2 * cos_theta_1 * -cos_theta_2) * normal;
             refracted_direction = glm::normalize(refracted_direction);
             Ray refracted_ray(point + refracted_direction * SHIFT, refracted_direction);
 
@@ -194,7 +194,7 @@ glm::vec3 Scene::raytrace(Ray ray, int depth) {
             float r_0 = std::pow((mu_1 - mu_2) / (mu_1 + mu_2), 2);
             float r = r_0 + (1 - r_0) * std::pow(1 - cos_theta_1, 5);
 
-            return r * reflected_color + (1 - r) *refracted_color;
+            return r * reflected_color + (1 - r) * refracted_color;
         }
         case (DIFFUSE):
         {
