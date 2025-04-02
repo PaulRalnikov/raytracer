@@ -3,7 +3,6 @@
 #include "../glm/vec2.hpp"
 #include "primitive.hpp"
 #include "ray.hpp"
-#include "light.hpp"
 #include <limits>
 
 struct Scene {
@@ -29,6 +28,5 @@ public:
     size_t samples; //ray per pixel
 
     std::vector<Primitive> primitives;
-    std::vector<Light> lights;
 };
 

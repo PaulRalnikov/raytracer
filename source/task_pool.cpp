@@ -23,9 +23,8 @@ void TaskPool::thread_loop() {
         RaytrasyngTask task;
         {
             std::lock_guard lock(m_mutex);
-            if (m_tasks.empty())
-            {
-                continue;
+            if (m_tasks.empty()) {
+                break;
             }
             size_t i = m_rnd() % m_tasks.size();
             task = std::move(m_tasks[i]);

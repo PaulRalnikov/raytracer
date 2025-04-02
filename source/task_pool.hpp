@@ -18,7 +18,7 @@ struct RaytrasyngTask {
 // Pool of raytrasing tasks
 class TaskPool {
 public:
-    TaskPool(std::vector<RaytrasyngTask>&& a_tasks, Scene& a_scene, size_t threads_count = 16);
+    TaskPool(std::vector<RaytrasyngTask>&& a_tasks, Scene& a_scene, size_t threads_count = 8);
     ~TaskPool();
 
     void add_task(RaytrasyngTask task);

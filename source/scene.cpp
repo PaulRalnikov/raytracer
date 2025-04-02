@@ -1,5 +1,6 @@
 #include "scene.hpp"
 #include "ray.hpp"
+#include "random.hpp"
 #include <cmath>
 #include "../glm/glm.hpp"
 #include <functional>
@@ -73,6 +74,10 @@ void Scene::readTxt(std::string txt_path)
         {
             in >> primitives.back().rotation;
         }
+        else if (command == "EMISSION")
+        {
+            in >> primitives.back().emission;
+        }
         else if (command == "COLOR")
         {
             in >> primitives.back().color;
@@ -93,28 +98,6 @@ void Scene::readTxt(std::string txt_path)
         else if (command == "RAY_DEPTH")
         {
             in >> max_ray_depth;
-        }
-        else if (command == "NEW_LIGHT")
-        {
-            lights.push_back(Light());
-        }
-        else if (command == "LIGHT_INTENSITY")
-        {
-            in >> lights.back().intensivity;
-        }
-        else if (command == "LIGHT_DIRECTION")
-        {
-            in >> lights.back().geom;
-            lights.back().type = DIRECTED;
-        }
-        else if (command == "LIGHT_POSITION")
-        {
-            in >> lights.back().geom;
-            lights.back().type = POINT;
-        }
-        else if (command == "LIGHT_ATTENUATION")
-        {
-            in >> lights.back().attenuation;
         }
     }
 
@@ -194,64 +177,49 @@ glm::vec3 Scene::raytrace(Ray ray, int depth)
     {
     case (DIELECTRIC):
     {
-        glm::vec3 reflected_color = raytrace(reflected_ray, depth + 1);
-
         // Snell's law
         float mu_1 = 1;
         float mu_2 = primitive.ior;
 
         float cos_theta_1 = -normal_direction_cos;
-        if (inside)
-        {
+        if (inside) {
             std::swap(mu_1, mu_2);
         }
 
         float sin_theta_2 = mu_1 / mu_2 * std::sqrt(1 - std::pow(cos_theta_1, 2));
-        if (std::abs(sin_theta_2) > 1)
-        {
-            return reflected_color;
+        if (std::abs(sin_theta_2) > 1) {
+            return primitive.emission + raytrace(reflected_ray, depth + 1);
         }
         float cos_theta_2 = std::sqrt(1 - std::pow(sin_theta_2, 2));
 
+        // Shlick's approx
+        float r_0 = std::pow((mu_1 - mu_2) / (mu_1 + mu_2), 2);
+        float r = r_0 + (1 - r_0) * std::pow(1 - cos_theta_1, 5);
+
+        if (random_float(0, 1) < r) {
+            // choose reflection
+            return primitive.emission + raytrace(reflected_ray, depth + 1);
+        }
+        // choose refraction
         glm::vec3 refracted_direction = mu_1 / mu_2 * ray.direction + (cos_theta_1 * mu_1 / mu_2 - cos_theta_2) * normal;
         refracted_direction = glm::normalize(refracted_direction);
         Ray refracted_ray(point + refracted_direction * SHIFT, refracted_direction);
 
         glm::vec3 refracted_color = raytrace(refracted_ray, depth + 1);
         if (!inside)
+        {
             refracted_color *= primitive.color;
-
-        // Shlick's approx
-        float r_0 = std::pow((mu_1 - mu_2) / (mu_1 + mu_2), 2);
-        float r = r_0 + (1 - r_0) * std::pow(1 - cos_theta_1, 5);
-
-        return r * reflected_color + (1 - r) * refracted_color;
+        }
+        return primitive.emission + refracted_color;
     }
     case (DIFFUSE):
     {
-        glm::vec3 result = primitive.emission;
-        
-        // for (Light &light : lights)
-        // {
-        //     glm::vec3 light_direction = light.get_direction(point);
-        //     glm::vec3 light_color = light.get_color(point);
-        //     float light_distance = light.get_distance(point);
-
-        //     // shadow ray
-        //     Ray shadow_ray(point + light_direction * SHIFT, light_direction);
-        //     auto shadow_ray_intersection = intersect(shadow_ray, light_distance);
-        //     if (shadow_ray_intersection.has_value())
-        //     {
-        //         continue;
-        //     }
-
-        //     float dot = glm::dot(light_direction, normal);
-        //     if (dot >= 0)
-        //         result += dot * primitive.color * light_color;
-        // }
-        return result;
+        glm::vec3 w = random_direction(normal);
+        Ray random_ray = Ray(point + w * SHIFT, w);
+        glm::vec3 L_in = raytrace(random_ray, depth + 1);
+        return primitive.emission + 2.f * glm::dot(w, normal) * primitive.color * L_in;
     }
     case (METALLIC):
-        return raytrace(reflected_ray, depth + 1) * primitive.color;
+        return raytrace(reflected_ray, depth + 1) * primitive.color + primitive.emission;
     }
 }

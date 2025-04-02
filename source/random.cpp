@@ -1,4 +1,4 @@
-#include "vector_generator.hpp"
+#include "random.hpp"
 #include "../glm/glm.hpp"
 
 typedef struct
@@ -21,17 +21,17 @@ uint32_t pcg32_random_r()
 }
 
 //generates float in [0, 1]
-float generate_float(float l = -1, float r = 1) {
+float random_float(float l, float r) {
     float t = pcg32_random_r() / (float)UINT32_MAX;
     return l + t * (r - l);
 }
 
-glm::vec3 generate_direction(glm::vec3 normal) {
+glm::vec3 random_direction(glm::vec3 normal) {
     glm::vec3 v;
     do {
-        v.x = generate_float();
-        v.y = generate_float();
-        v.z = generate_float();
+        v.x = random_float(-1, 1);
+        v.y = random_float(-1, 1);
+        v.z = random_float(-1, 1);
     } while (glm::dot(v, v) >= 1);
     v = glm::normalize(v);
     if (glm::dot(v, normal) < 0) {
