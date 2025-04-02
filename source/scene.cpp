@@ -136,7 +136,7 @@ Scene::intersect(Ray ray, float max_distance)
 
 glm::vec3 Scene::raytrace(Ray ray, int depth) {
     if (depth >= max_ray_depth) {
-        return background_color;
+        return glm::vec3(0);
     }
     auto intersection = intersect(ray);
     if (!intersection.has_value())
@@ -220,5 +220,7 @@ glm::vec3 Scene::raytrace(Ray ray, int depth) {
         }
         case (METALLIC):
             return raytrace(reflected_ray, depth + 1) * primitive.color;
+        default:
+            return glm::vec3(0);
     }
 }

@@ -1,13 +1,17 @@
+#include <algorithm>
 #include <iostream>
+#include <chrono>
 #include <fstream>
 #include <cassert>
 #include <vector>
+
 #include "glm/vec3.hpp"
 #include "glm/vec4.hpp"
 #include "glm/gtx/quaternion.hpp"
+
 #include "source/primitive.hpp"
 #include "source/scene.hpp"
-#include <algorithm>
+#include "source/task_pool.hpp"
 
 glm::vec3 saturate(glm::vec3 const &color)
 {
@@ -68,17 +72,39 @@ int main(int argc, char *argv[])
 
     std::cout << scene.primitives.size() << std::endl;
 
-    std::vector<glm::vec3> pixels(scene.width * scene.height);
+    auto start = std::chrono::high_resolution_clock::now();
 
-    int cnt = 0;
-    int mod = 10000 ;
+    size_t pixels_count = scene.width * scene.height;
+    size_t tasks_count = pixels_count;
 
-    for (int x = 0; x < scene.width; x++) {
-        for (int y = 0; y < scene.height; y++) {
+    std::vector<glm::vec3> pixels(pixels_count);
+
+    std::vector<RaytrasyngTask> tasks(tasks_count);
+    std::vector<std::future<glm::vec3> > futures(tasks_count);
+
+    for (int x = 0; x < scene.width; x++)
+    {
+        for (int y = 0; y < scene.height; y++)
+        {
+            size_t i = y * scene.width + x;
             Ray ray = scene.ray_to_pixel(glm::vec2(x + 0.5, y + 0.5));
-            pixels[y * scene.width + x] =  scene.raytrace(ray);
+            tasks[i] = RaytrasyngTask(ray);
+            futures[i] = tasks[i].color.get_future();
         }
     }
 
+    TaskPool pool(std::move(tasks), scene);
+
+    for (size_t i = 0; i < pixels_count; i++) {
+        pixels[i] = futures[i].get();
+    }
+
     write_to_output(output_path, pixels, scene);
+
+    auto end = std::chrono::high_resolution_clock::now();
+
+    // Вычисление времени выполнения
+    std::chrono::duration<double> duration = end - start;
+
+    std::cout << "Time elapced: " << duration.count() << " second" << std::endl;
 }
