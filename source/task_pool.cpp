@@ -1,11 +1,14 @@
 #include "task_pool.hpp"
 
+static const int RND_KEY = 31;
+
 RaytrasyngTask::RaytrasyngTask(Ray ray, int depth, std::promise<glm::vec3> color):
     ray(ray), depth(depth), color(std::move(color)) {}
 
 TaskPool::TaskPool(std::vector<RaytrasyngTask> &&a_tasks, Scene &a_scene, size_t threads_count) :
                     m_scene(a_scene),
                     m_mutex(),
+                    m_rnd(RND_KEY),
                     m_tasks(std::move(a_tasks)),
                     running(true),
                     m_threads(threads_count)
@@ -18,14 +21,15 @@ TaskPool::TaskPool(std::vector<RaytrasyngTask> &&a_tasks, Scene &a_scene, size_t
 void TaskPool::thread_loop() {
     while (running) {
         RaytrasyngTask task;
-
         {
             std::lock_guard lock(m_mutex);
             if (m_tasks.empty())
             {
                 continue;
             }
-            task = std::move(m_tasks.back());
+            size_t i = m_rnd() % m_tasks.size();
+            task = std::move(m_tasks[i]);
+            std::swap(m_tasks[i], m_tasks.back());
             m_tasks.pop_back();
         }
 

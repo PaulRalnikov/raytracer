@@ -2,6 +2,8 @@
 #include <vector>
 #include <future>
 #include <mutex>
+#include <random>
+
 #include "../glm/vec3.hpp"
 #include "scene.hpp"
 
@@ -26,7 +28,8 @@ private:
 
     Scene &m_scene;
 
-    std::mutex m_mutex; //for m_tasks
+    std::mutex m_mutex; //for m_tasks and m_rnd
+    std::mt19937 m_rnd;
     std::vector<RaytrasyngTask> m_tasks;
     std::atomic<bool> running;
     std::vector<std::thread> m_threads;

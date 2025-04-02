@@ -102,9 +102,6 @@ int main(int argc, char *argv[])
     write_to_output(output_path, pixels, scene);
 
     auto end = std::chrono::high_resolution_clock::now();
-
-    // Вычисление времени выполнения
     std::chrono::duration<double> duration = end - start;
-
     std::cout << "Time elapced: " << duration.count() << " second" << std::endl;
 }
