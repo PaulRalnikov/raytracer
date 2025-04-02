@@ -12,13 +12,24 @@ enum PrimitiveType
     BOX
 };
 
+enum MaterialType
+{
+    METALLIC,
+    DIELECTRIC,
+    DIFFUSE
+};
+
 struct Primitive
 {
     PrimitiveType type;
     glm::vec3 position;
-    glm::vec3 geom; // depends on type
+    glm::vec3 geom; // depends on type: plane normal, ellipsoid radiuses or box sizes
     my_quat rotation;
     glm::vec3 color;
+    MaterialType material = DIFFUSE;
+    float ior; //only for diellectric materials
+
+    glm::vec3 get_normal(glm::vec3 point);
 };
 
 

@@ -3,6 +3,8 @@
 #include "../glm/vec2.hpp"
 #include "primitive.hpp"
 #include "ray.hpp"
+#include "light.hpp"
+#include <limits>
 
 struct Scene {
 public:
@@ -10,9 +12,9 @@ public:
 
     Ray ray_to_pixel(glm::vec2 pixel);
 
-    // returns position on the ray and color
-    std::optional<std::pair<float, glm::vec3> > intersect(Ray ray, bool print);
-    glm::vec3 raytrace(Ray ray, bool print = false);
+    // returns position on the ray and primitive index
+    std::optional<std::pair<float, size_t>> intersect(Ray ray, float max_distance = std::numeric_limits<float>::infinity());
+    glm::vec3 raytrace(Ray ray, int depth = 0);
 
     int width, height;
     glm::vec3 background_color;
@@ -23,7 +25,10 @@ public:
     float fov_x, fov_y;
     float tan_fov_x_2;
     float tan_fov_y_2;
+    int max_ray_depth;
+    glm::vec3 abmient;
 
     std::vector<Primitive> primitives;
+    std::vector<Light> lights;
 };
 
