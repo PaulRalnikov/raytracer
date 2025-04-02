@@ -41,6 +41,10 @@ void Scene::readTxt(std::string txt_path)
         {
             in >> fov_x;
         }
+        else if (command == "SAMPLES")
+        {
+            in >> samples;
+        }
         else if (command == "NEW_PRIMITIVE")
         {
             primitives.push_back(Primitive());
@@ -89,10 +93,6 @@ void Scene::readTxt(std::string txt_path)
         else if (command == "RAY_DEPTH")
         {
             in >> max_ray_depth;
-        }
-        else if (command == "AMBIENT_LIGHT")
-        {
-            in >> abmient;
         }
         else if (command == "NEW_LIGHT")
         {
@@ -229,25 +229,26 @@ glm::vec3 Scene::raytrace(Ray ray, int depth)
     }
     case (DIFFUSE):
     {
-        glm::vec3 result = primitive.color * abmient;
-        for (Light &light : lights)
-        {
-            glm::vec3 light_direction = light.get_direction(point);
-            glm::vec3 light_color = light.get_color(point);
-            float light_distance = light.get_distance(point);
+        glm::vec3 result = primitive.emission;
+        
+        // for (Light &light : lights)
+        // {
+        //     glm::vec3 light_direction = light.get_direction(point);
+        //     glm::vec3 light_color = light.get_color(point);
+        //     float light_distance = light.get_distance(point);
 
-            // shadow ray
-            Ray shadow_ray(point + light_direction * SHIFT, light_direction);
-            auto shadow_ray_intersection = intersect(shadow_ray, light_distance);
-            if (shadow_ray_intersection.has_value())
-            {
-                continue;
-            }
+        //     // shadow ray
+        //     Ray shadow_ray(point + light_direction * SHIFT, light_direction);
+        //     auto shadow_ray_intersection = intersect(shadow_ray, light_distance);
+        //     if (shadow_ray_intersection.has_value())
+        //     {
+        //         continue;
+        //     }
 
-            float dot = glm::dot(light_direction, normal);
-            if (dot >= 0)
-                result += dot * primitive.color * light_color;
-        }
+        //     float dot = glm::dot(light_direction, normal);
+        //     if (dot >= 0)
+        //         result += dot * primitive.color * light_color;
+        // }
         return result;
     }
     case (METALLIC):

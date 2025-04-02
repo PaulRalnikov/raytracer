@@ -12,6 +12,7 @@
 #include "source/primitive.hpp"
 #include "source/scene.hpp"
 #include "source/task_pool.hpp"
+#include "source/vector_generator.hpp"
 
 glm::vec3 saturate(glm::vec3 const &color)
 {
