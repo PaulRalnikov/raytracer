@@ -74,6 +74,7 @@ std::ostream &operator<<(std::ostream &out, const Primitive &p)
     out << "Geom: " << p.geom << '\n';
     out << "Rotation: " << p.rotation << '\n';
     out << "Color: " << p.color << '\n';
+    out << "Emission: " << p.emission << '\n';
     out << "Material: " << to_string(p.material);
     if (p.material == DIELECTRIC) {
         out << '\n';

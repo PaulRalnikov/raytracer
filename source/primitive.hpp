@@ -26,6 +26,7 @@ struct Primitive
     glm::vec3 geom; // depends on type: plane normal, ellipsoid radiuses or box sizes
     my_quat rotation;
     glm::vec3 color;
+    glm::vec3 emission;
     MaterialType material = DIFFUSE;
     float ior; //only for diellectric materials
 

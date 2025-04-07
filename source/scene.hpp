@@ -3,7 +3,6 @@
 #include "../glm/vec2.hpp"
 #include "primitive.hpp"
 #include "ray.hpp"
-#include "light.hpp"
 #include <limits>
 
 struct Scene {
@@ -26,9 +25,8 @@ public:
     float tan_fov_x_2;
     float tan_fov_y_2;
     int max_ray_depth;
-    glm::vec3 abmient;
+    size_t samples; //ray per pixel
 
     std::vector<Primitive> primitives;
-    std::vector<Light> lights;
 };
 

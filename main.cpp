@@ -1,13 +1,18 @@
+#include <algorithm>
 #include <iostream>
+#include <chrono>
 #include <fstream>
 #include <cassert>
 #include <vector>
+
 #include "glm/vec3.hpp"
 #include "glm/vec4.hpp"
 #include "glm/gtx/quaternion.hpp"
+
 #include "source/primitive.hpp"
 #include "source/scene.hpp"
-#include <algorithm>
+#include "source/task_pool.hpp"
+#include "source/random.hpp"
 
 glm::vec3 saturate(glm::vec3 const &color)
 {
@@ -68,17 +73,53 @@ int main(int argc, char *argv[])
 
     std::cout << scene.primitives.size() << std::endl;
 
-    std::vector<glm::vec3> pixels(scene.width * scene.height);
+    auto start = std::chrono::high_resolution_clock::now();
 
-    int cnt = 0;
-    int mod = 10000 ;
+    size_t pixels_count = scene.width * scene.height;
+    size_t tasks_count = pixels_count;
 
-    for (int x = 0; x < scene.width; x++) {
-        for (int y = 0; y < scene.height; y++) {
-            Ray ray = scene.ray_to_pixel(glm::vec2(x + 0.5, y + 0.5));
-            pixels[y * scene.width + x] =  scene.raytrace(ray);
+    std::vector<glm::vec3> pixels(pixels_count);
+
+    std::vector<RaytrasyngTask> tasks;
+    tasks.reserve(pixels_count * scene.samples);
+
+    //vector of futures for each pixel
+    std::vector<std::vector<std::future<glm::vec3> > > futures(
+        pixels_count
+    );
+
+    for (int x = 0; x < scene.width; x++)
+    {
+        for (int y = 0; y < scene.height; y++)
+        {
+            size_t i = y * scene.width + x;
+            futures[i].reserve(scene.samples);
+            for (size_t j = 0; j < scene.samples; j++) {
+                glm::vec2 coords(x + random_float(0, 1), y + random_float(0, 1));
+                // glm::vec2 coords(x + 0.5, y + 0.5);
+                Ray ray = scene.ray_to_pixel(coords);
+                tasks.push_back(RaytrasyngTask(ray));
+                futures[i].push_back(tasks.back().color.get_future());
+            }
+
         }
     }
 
+    std::cout << "tasks count: " << tasks.size() << '\n';
+
+    TaskPool pool(std::move(tasks), scene);
+
+    for (size_t i = 0; i < pixels_count; i++) {
+        pixels[i] = glm::vec3(0.0);
+        for (size_t j = 0; j < scene.samples; j++) {
+            pixels[i] += futures[i][j].get();
+        }
+        pixels[i] /= scene.samples;
+    }
+
     write_to_output(output_path, pixels, scene);
+
+    auto end = std::chrono::high_resolution_clock::now();
+    std::chrono::duration<double> duration = end - start;
+    std::cout << "Time elapced: " << duration.count() << " second" << std::endl;
 }
