@@ -38,7 +38,8 @@ void TaskPool::thread_loop() {
 
         glm::vec3 color(0.0);
         for (size_t i = 0; i < m_scene.samples; i++) {
-            glm::vec2 coords = glm::vec2(task.x + random_float(0, 1), task.y + random_float(0, 1));
+            glm::vec2 vec_0_1(0, 1);
+            glm::vec2 coords = glm::vec2(task.x, task.y) + random_vec2(vec_0_1, vec_0_1);
             Ray ray = m_scene.ray_to_pixel(coords);
             color += m_scene.raytrace(ray);
         }
