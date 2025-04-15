@@ -6,6 +6,7 @@
 
 #include "primitive.hpp"
 #include "ray.hpp"
+#include "distribution/cos_weighted.hpp"
 
 struct Scene {
 public:
@@ -30,5 +31,7 @@ public:
     size_t samples; //ray per pixel
 
     std::vector<Primitive> primitives;
+
+    CosWeighttedDistrubution distribution;
 };
 

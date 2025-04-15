@@ -37,17 +37,3 @@ glm::vec3 random_normal_vec3() {
 
     return glm::normalize(v);
 }
-
-glm::vec3 random_direction(glm::vec3 normal) {
-    glm::vec3 v = random_normal_vec3();
-
-    if (glm::dot(v, normal) < 0) {
-        v = -v;
-    }
-    return v;
-}
-
-glm::vec3 random_cos_weighted(glm::vec3 normal) {
-    glm::vec3 v = random_normal_vec3();
-    return glm::normalize(v + normal);
-}

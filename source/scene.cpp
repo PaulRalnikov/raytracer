@@ -3,6 +3,7 @@
 #include <functional>
 
 #include <glm/glm.hpp>
+#include <glm/gtc/constants.hpp>
 
 #include "scene.hpp"
 #include "ray.hpp"
@@ -109,10 +110,11 @@ glm::vec3 Scene::raytrace(Ray ray, int depth)
     }
     case (DIFFUSE):
     {
-        glm::vec3 w = random_cos_weighted(normal);
+        // glm::vec3 w = random_cos_weighted(normal);
+        glm::vec3 w = distribution.sample(point, normal);
         Ray random_ray = Ray(point + w * SHIFT, w);
         glm::vec3 L_in = raytrace(random_ray, depth + 1);
-        return primitive.emission + primitive.color * L_in;
+        return primitive.emission + primitive.color / glm::pi<float>() * L_in * glm::dot(w, normal) / distribution.pdf(point, normal, w);
     }
     case (METALLIC):
         return raytrace(reflected_ray, depth + 1) * primitive.color + primitive.emission;
