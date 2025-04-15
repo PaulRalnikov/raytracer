@@ -1,9 +1,11 @@
 #pragma once
+#include <limits>
 #include <vector>
-#include "../glm/vec2.hpp"
+
+#include <glm/vec2.hpp>
+
 #include "primitive.hpp"
 #include "ray.hpp"
-#include <limits>
 
 struct Scene {
 public:

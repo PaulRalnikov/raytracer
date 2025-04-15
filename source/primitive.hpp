@@ -3,7 +3,8 @@
 #include <string>
 #include <iostream>
 #include <fstream>
-#include "my_glm.hpp"
+
+#include "utils/my_glm.hpp"
 
 enum PrimitiveType
 {

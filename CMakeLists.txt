@@ -5,6 +5,11 @@ project(render)
 
 file(GLOB_RECURSE src "source/*.cpp")
 
+include_directories(
+    ${CMAKE_SOURCE_DIR}/source/
+    ${CMAKE_SOURCE_DIR}/glm
+)
+
 set(TARGET_NAME "${PROJECT_NAME}")
 
 add_executable(${TARGET_NAME} ${src} main.cpp)

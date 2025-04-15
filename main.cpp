@@ -5,14 +5,12 @@
 #include <cassert>
 #include <vector>
 
-#include "glm/vec3.hpp"
-#include "glm/vec4.hpp"
-#include "glm/gtx/quaternion.hpp"
+#include <glm/glm.hpp>
 
-#include "source/primitive.hpp"
-#include "source/scene.hpp"
-#include "source/task_pool.hpp"
-#include "source/random.hpp"
+#include "primitive.hpp"
+#include "scene.hpp"
+#include "utils/task_pool.hpp"
+#include "utils/random.hpp"
 
 glm::vec3 saturate(glm::vec3 const &color)
 {

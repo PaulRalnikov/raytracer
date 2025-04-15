@@ -1,10 +1,13 @@
+#include <algorithm>
+#include <cmath>
+#include <functional>
+
+#include <glm/glm.hpp>
+
 #include "scene.hpp"
 #include "ray.hpp"
-#include "random.hpp"
-#include <cmath>
-#include "../glm/glm.hpp"
-#include <functional>
-#include <algorithm>
+#include "utils/random.hpp"
+
 
 void Scene::readTxt(std::string txt_path)
 {

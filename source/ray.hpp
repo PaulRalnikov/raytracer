@@ -1,6 +1,7 @@
 #pragma once
 #include <optional>
 #include <iostream>
+
 #include "primitive.hpp"
 
 struct Ray

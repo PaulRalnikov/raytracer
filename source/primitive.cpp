@@ -1,6 +1,8 @@
 #include "primitive.hpp"
-#include "../glm/glm.hpp"
-#include "my_glm.hpp"
+
+#include <glm/glm.hpp>
+
+#include "utils/my_glm.hpp"
 
 glm::vec3 Primitive::get_normal(glm::vec3 point) {
     point -= position;
