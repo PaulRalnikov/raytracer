@@ -11,7 +11,7 @@ my_quat::my_quat(float x, float y, float z, float w):
 my_quat::my_quat(glm::vec3 v, float w) :
     vec(v), w(w) {}
 
-my_quat my_quat::operator*(const my_quat& q) {
+my_quat my_quat::operator*(const my_quat& q) const {
     return my_quat(w * q.vec + q.w * vec + glm::cross(vec, q.vec), w * q.w - glm::dot(vec, q.vec));
 }
 
@@ -19,7 +19,7 @@ my_quat my_quat::inverse() const {
     return my_quat(-vec, w);
 }
 
-glm::vec3 my_quat::operator* (const glm::vec3& v) {
+glm::vec3 my_quat::operator* (const glm::vec3& v) const {
     my_quat q_hat = inverse();
     my_quat res = this->operator*(my_quat(v, 0)) * q_hat;
     return res.vec;
@@ -54,4 +54,12 @@ float vec_max(glm::vec3 v) {
 float vec_min(glm::vec3 v)
 {
     return std::min({v.x, v.y, v.z});
+}
+
+glm::vec3 pairwice_product(glm::vec3 v) {
+    return glm::vec3(v.y, v.z, v.x) * glm::vec3(v.z, v.x, v.y);
+}
+
+float sum(glm::vec3 v) {
+    return v.x + v.y + v.z;
 }

@@ -110,11 +110,20 @@ glm::vec3 Scene::raytrace(Ray ray, int depth)
     }
     case (DIFFUSE):
     {
+        if (primitive.emission.x > 1e-8) {
+            return primitive.emission;
+        }
         // glm::vec3 w = random_cos_weighted(normal);
-        glm::vec3 w = distribution.sample(point, normal);
+        glm::vec3 w = prim_distribution.sample(point, normal);
+        float normal_w_cos = glm::dot(w, normal);
+        if (normal_w_cos < 0) {
+            return primitive.emission;
+        }
+        // glm::vec3 w = cos_distribution.sample(point, normal);
         Ray random_ray = Ray(point + w * SHIFT, w);
         glm::vec3 L_in = raytrace(random_ray, depth + 1);
-        return primitive.emission + primitive.color / glm::pi<float>() * L_in * glm::dot(w, normal) / distribution.pdf(point, normal, w);
+        // return primitive.emission + primitive.color / glm::pi<float>() * L_in * glm::dot(w, normal) / cos_distribution.pdf(point, normal, w);
+        return primitive.emission + primitive.color / glm::pi<float>() * L_in * normal_w_cos / prim_distribution.pdf(point, normal, w);
     }
     case (METALLIC):
         return raytrace(reflected_ray, depth + 1) * primitive.color + primitive.emission;
@@ -221,8 +230,11 @@ void Scene::readTxt(std::string txt_path)
 
     fov_y = atan(height / (float)width * tan(fov_x / 2)) * 2;
 
-    for (auto el : primitives)
+    for (const auto &el : primitives)
     {
+        if (el.type == BOX && el.emission.x > 1e-8) {
+            prim_distribution = PrimitiveDistribution(el);
+        }
         std::cout << el << '\n';
         std::cout << "==============================" << std::endl;
     }

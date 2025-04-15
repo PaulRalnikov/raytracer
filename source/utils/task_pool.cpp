@@ -16,6 +16,7 @@ TaskPool::TaskPool(std::vector<RaytrasyngTask> &&a_tasks, Scene &a_scene) :
                     m_tasks(std::move(a_tasks)),
                     running(true),
                     m_threads(std::thread::hardware_concurrency())
+                    // m_threads(1)
 {
     for (size_t i = 0; i < m_threads.size(); i++) {
         m_threads[i] = std::thread(&TaskPool::thread_loop, this);

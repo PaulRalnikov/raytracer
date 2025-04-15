@@ -8,11 +8,11 @@
 struct my_quat {
     glm::vec3 vec;
     float w;
-    my_quat(glm::vec3 v = glm::vec3(0), float w = 1);
-    my_quat(float x, float y, float z, float w);
+    explicit my_quat(glm::vec3 v = glm::vec3(0), float w = 1);
+    explicit my_quat(float x, float y, float z, float w);
 
-    my_quat operator*(const my_quat& q);
-    glm::vec3 operator*(const glm::vec3& v);
+    my_quat operator*(const my_quat& q) const;
+    glm::vec3 operator*(const glm::vec3& v) const;
 
     my_quat inverse() const;
 };
@@ -28,3 +28,7 @@ std::ifstream &operator>>(std::ifstream &in, my_quat &q);
 float vec_max(glm::vec3 v);
 
 float vec_min(glm::vec3 v);
+
+glm::vec3 pairwice_product(glm::vec3 v);
+
+float sum(glm::vec3);

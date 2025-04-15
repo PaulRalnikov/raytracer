@@ -7,6 +7,7 @@
 #include "primitive.hpp"
 #include "ray.hpp"
 #include "distribution/cos_weighted.hpp"
+#include "distribution/primitive_distribition.hpp"
 
 struct Scene {
 public:
@@ -32,6 +33,7 @@ public:
 
     std::vector<Primitive> primitives;
 
-    CosWeighttedDistrubution distribution;
+    PrimitiveDistribution prim_distribution;
+    CosWeighttedDistrubution cos_distribution;
 };
 
