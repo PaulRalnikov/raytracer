@@ -8,6 +8,7 @@
 #include "ray.hpp"
 #include "distribution/cos_weighted.hpp"
 #include "distribution/primitive_distribition.hpp"
+#include "distribution/mix.hpp"
 
 struct Scene {
 public:
@@ -32,8 +33,6 @@ public:
     size_t samples; //ray per pixel
 
     std::vector<Primitive> primitives;
-
-    PrimitiveDistribution prim_distribution;
-    CosWeighttedDistrubution cos_distribution;
+    MixDistribution mis_distribution;
 };
 
