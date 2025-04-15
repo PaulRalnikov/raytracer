@@ -1,19 +1,23 @@
 #include "task_pool.hpp"
+#include "random.hpp"
 
 static const int RND_KEY = 31;
 
-RaytrasyngTask::RaytrasyngTask(Ray ray, int depth, std::promise<glm::vec3> color):
-    ray(ray), depth(depth), color(std::move(color)) {}
+RaytrasyngTask::RaytrasyngTask(int x, int y):
+    x(x), y(y)
+{
+    color = std::promise<glm::vec3>();
+}
 
-TaskPool::TaskPool(std::vector<RaytrasyngTask> &&a_tasks, Scene &a_scene, size_t threads_count) :
+TaskPool::TaskPool(std::vector<RaytrasyngTask> &&a_tasks, Scene &a_scene) :
                     m_scene(a_scene),
                     m_mutex(),
                     m_rnd(RND_KEY),
                     m_tasks(std::move(a_tasks)),
                     running(true),
-                    m_threads(threads_count)
+                    m_threads(std::thread::hardware_concurrency())
 {
-    for (size_t i = 0; i < threads_count; i++) {
+    for (size_t i = 0; i < m_threads.size(); i++) {
         m_threads[i] = std::thread(&TaskPool::thread_loop, this);
     }
 }
@@ -32,9 +36,15 @@ void TaskPool::thread_loop() {
             m_tasks.pop_back();
         }
 
-        glm::vec3 color = m_scene.raytrace(task.ray, task.depth);
+        glm::vec3 color(0.0);
+        for (size_t i = 0; i < m_scene.samples; i++) {
+            glm::vec2 coords = glm::vec2(task.x + random_float(0, 1), task.y + random_float(0, 1));
+            Ray ray = m_scene.ray_to_pixel(coords);
+            color += m_scene.raytrace(ray);
+        }
+        color /= m_scene.samples;
+
         task.color.set_value(color);
-        // std::cout << "tasks for ray " << task.ray << " funished; result is " << color << std::endl;
     }
 }
 

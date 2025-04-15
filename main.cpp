@@ -78,41 +78,24 @@ int main(int argc, char *argv[])
 
     std::vector<glm::vec3> pixels(pixels_count);
 
-    std::vector<RaytrasyngTask> tasks;
-    tasks.reserve(pixels_count * scene.samples);
-
-    //vector of futures for each pixel
-    std::vector<std::vector<std::future<glm::vec3> > > futures(
-        pixels_count
-    );
+    std::vector<RaytrasyngTask> tasks(pixels_count);
+    // tasks.reserve(pixels_count);
+    std::vector<std::future<glm::vec3> > futures(pixels_count);
 
     for (int x = 0; x < scene.width; x++)
     {
         for (int y = 0; y < scene.height; y++)
         {
             size_t i = y * scene.width + x;
-            futures[i].reserve(scene.samples);
-            for (size_t j = 0; j < scene.samples; j++) {
-                glm::vec2 coords(x + random_float(0, 1), y + random_float(0, 1));
-                // glm::vec2 coords(x + 0.5, y + 0.5);
-                Ray ray = scene.ray_to_pixel(coords);
-                tasks.push_back(RaytrasyngTask(ray));
-                futures[i].push_back(tasks.back().color.get_future());
-            }
-
+            tasks[i] = RaytrasyngTask(x, y);
+            futures[i] = tasks[i].color.get_future();
         }
     }
-
-    std::cout << "tasks count: " << tasks.size() << '\n';
 
     TaskPool pool(std::move(tasks), scene);
 
     for (size_t i = 0; i < pixels_count; i++) {
-        pixels[i] = glm::vec3(0.0);
-        for (size_t j = 0; j < scene.samples; j++) {
-            pixels[i] += futures[i][j].get();
-        }
-        pixels[i] /= scene.samples;
+        pixels[i] = futures[i].get();
     }
 
     write_to_output(output_path, pixels, scene);

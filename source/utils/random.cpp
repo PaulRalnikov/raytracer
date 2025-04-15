@@ -27,16 +27,27 @@ float random_float(float l, float r) {
     return l + t * (r - l);
 }
 
-glm::vec3 random_direction(glm::vec3 normal) {
+glm::vec3 random_normal_vec3() {
     glm::vec3 v;
     do {
         v.x = random_float(-1, 1);
         v.y = random_float(-1, 1);
         v.z = random_float(-1, 1);
     } while (glm::dot(v, v) >= 1);
-    v = glm::normalize(v);
+
+    return glm::normalize(v);
+}
+
+glm::vec3 random_direction(glm::vec3 normal) {
+    glm::vec3 v = random_normal_vec3();
+
     if (glm::dot(v, normal) < 0) {
         v = -v;
     }
     return v;
+}
+
+glm::vec3 random_cos_weighted(glm::vec3 normal) {
+    glm::vec3 v = random_normal_vec3();
+    return glm::normalize(v + normal);
 }
