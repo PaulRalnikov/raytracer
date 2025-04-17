@@ -4,7 +4,7 @@
 
 #include "utils/my_glm.hpp"
 
-glm::vec3 Primitive::get_normal(glm::vec3 point) {
+glm::vec3 Primitive::get_normal(glm::vec3 point) const {
     point -= position;
     point = rotation.inverse() * point;
     glm::vec3 normal;

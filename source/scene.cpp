@@ -1,6 +1,7 @@
 #include <algorithm>
 #include <cmath>
 #include <functional>
+#include <cmath>
 
 #include <glm/glm.hpp>
 #include <glm/gtc/constants.hpp>
@@ -110,20 +111,25 @@ glm::vec3 Scene::raytrace(Ray ray, int depth)
     }
     case (DIFFUSE):
     {
-        if (primitive.emission.x > 1e-8) {
-            return primitive.emission;
-        }
         // glm::vec3 w = random_cos_weighted(normal);
         glm::vec3 w = mis_distribution.sample(point, normal);
         float normal_w_cos = glm::dot(w, normal);
-        if (normal_w_cos < 0) {
+        if (std::isnan(sum(w)) || normal_w_cos < 1e-8) {
+            return primitive.emission;
+        }
+        float pdf = mis_distribution.pdf(point, normal, w);
+        if (pdf == 0.0) {
             return primitive.emission;
         }
         // glm::vec3 w = cos_distribution.sample(point, normal);
         Ray random_ray = Ray(point + w * SHIFT, w);
         glm::vec3 L_in = raytrace(random_ray, depth + 1);
         // return primitive.emission + primitive.color / glm::pi<float>() * L_in * glm::dot(w, normal) / cos_distribution.pdf(point, normal, w);
-        return primitive.emission + primitive.color / glm::pi<float>() * L_in * normal_w_cos / mis_distribution.pdf(point, normal, w);
+        glm::vec3 add = primitive.color / glm::pi<float>() * L_in * normal_w_cos / pdf;
+        if (std::isnan(add.x)) {
+            return primitive.emission;
+        }
+        return primitive.emission + add;
     }
     case (METALLIC):
         return raytrace(reflected_ray, depth + 1) * primitive.color + primitive.emission;
@@ -233,16 +239,20 @@ void Scene::readTxt(std::string txt_path)
     // direct light sampling
     auto dis_distribution = std::make_shared<MixDistribution>();
 
+    bool fl = false;
     for (const auto &el : primitives)
     {
-        if (el.type == BOX && el.emission.x > 1e-8) {
+        if (el.type != PLANE && el.emission != glm::vec3(0.0)) {
             dis_distribution->add_distribution(
                 std::make_shared<PrimitiveDistribution>(el)
             );
+            fl = true;
         }
         std::cout << el << '\n';
         std::cout << "==============================" << std::endl;
     }
     mis_distribution.add_distribution(std::make_shared<CosWeighttedDistrubution>());
-    mis_distribution.add_distribution(dis_distribution);
+    if (fl) {
+        mis_distribution.add_distribution(dis_distribution);
+    }
 }

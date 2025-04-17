@@ -6,7 +6,7 @@ void MixDistribution::add_distribution(std::shared_ptr<IDiirectionDistrudution> 
 }
 
 glm::vec3 MixDistribution::sample(glm::vec3 point, glm::vec3 normal) const {
-    int idx = random_int(0, (int)m_distribitions.size() - 1);
+    int idx = random_int(0, m_distribitions.size() - 1);
     return m_distribitions[idx]->sample(point, normal);
 }
 

@@ -6,7 +6,7 @@
 
 struct Ray
 {
-    Ray(glm::vec3 pos = glm::vec3(), glm::vec3 dir = glm::vec3());
+    explicit Ray(glm::vec3 pos = glm::vec3(), glm::vec3 dir = glm::vec3());
 
     glm::vec3 position;
     glm::vec3 direction;

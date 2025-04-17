@@ -31,7 +31,7 @@ struct Primitive
     MaterialType material = DIFFUSE;
     float ior; //only for diellectric materials
 
-    glm::vec3 get_normal(glm::vec3 point);
+    glm::vec3 get_normal(glm::vec3 point) const;
 };
 
 
