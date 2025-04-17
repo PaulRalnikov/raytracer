@@ -51,7 +51,7 @@ glm::vec3 PrimitiveDistribution::sample(glm::vec3 point, glm::vec3 normal) const
 
 //returns pdf of point distribution
 float get_point_pdf(const Primitive& primitive, Ray ray, float ray_position) {
-    glm::vec3 intersection_point = ray.position + ray.direction + ray_position;
+    glm::vec3 intersection_point = ray.position + ray.direction * ray_position;
     glm::vec3 primitive_normal = primitive.get_normal(intersection_point);
 
     float p_y;
@@ -59,13 +59,13 @@ float get_point_pdf(const Primitive& primitive, Ray ray, float ray_position) {
     {
     case BOX: {
         glm::vec3 pairwice = pairwice_product(primitive.geom);
-        p_y = 1.f / 8.f / glm::pi<float>() / glm::length(primitive_normal * pairwice);
+        p_y = 1.f / 4.f / glm::pi<float>() / glm::length(primitive_normal * pairwice);
         break;
     }
     case ELLIPSOID:
     {
         glm::vec3 pairwice = pairwice_product(primitive.geom);
-        p_y = 1.f / 8.f / glm::pi<float>() / glm::length(primitive_normal * pairwice);
+        p_y = 1.f / 4.f / glm::pi<float>() / glm::length(primitive_normal * pairwice);
 
         break;
     }
