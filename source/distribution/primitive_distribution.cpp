@@ -17,35 +17,37 @@ glm::vec3 surface_point_to_box_coords(glm::vec2 surface_point, int surface_num) 
 glm::vec3 PrimitiveDistribution::sample(glm::vec3 point, glm::vec3 normal, pcg32_random_t &rng) const
 {
     glm::vec3 primitive_point;
-    switch (m_primitive.type)
-    {
-    case PLANE:
-        throw std::runtime_error("Can not create sample of distribution on plane");
-        break;
-    case BOX: {
-        glm::vec3 weights = pairwice_product(m_primitive.geom);
+    do {
+        switch (m_primitive.type)
+        {
+        case PLANE:
+            throw std::runtime_error("Can not create sample of distribution on plane");
+            break;
+        case BOX: {
+            glm::vec3 weights = pairwice_product(m_primitive.geom);
 
-        float side_coin = random_float(0, sum(weights), rng);
-        int front_back_coin = random_int(0, 1, rng) * 2 - 1; // 1 or -1
-        primitive_point = random_vec3(-m_primitive.geom, m_primitive.geom, rng);
+            float side_coin = random_float(0, sum(weights), rng);
+            int front_back_coin = random_int(0, 1, rng) * 2 - 1; // 1 or -1
+            primitive_point = random_vec3(-m_primitive.geom, m_primitive.geom, rng);
 
-        if (side_coin <= weights.x) {
-            primitive_point.x = front_back_coin * m_primitive.geom.x;
-        } else if (side_coin <= weights.x + weights.y) {
-            primitive_point.y = front_back_coin * m_primitive.geom.y;
-        } else {
-            primitive_point.z = front_back_coin * m_primitive.geom.z;
+            if (side_coin <= weights.x) {
+                primitive_point.x = front_back_coin * m_primitive.geom.x;
+            } else if (side_coin <= weights.x + weights.y) {
+                primitive_point.y = front_back_coin * m_primitive.geom.y;
+            } else {
+                primitive_point.z = front_back_coin * m_primitive.geom.z;
+            }
+            break;
         }
-        break;
-    }
-    case ELLIPSOID: {
-        primitive_point = random_normal_vec3(rng) * m_primitive.geom;
-        break;
-    }
-    default:
-        throw std::runtime_error("Unexpected type of primitive");
-    }
-    primitive_point = m_primitive.rotation * primitive_point + m_primitive.position;
+        case ELLIPSOID: {
+            primitive_point = random_normal_vec3(rng) * m_primitive.geom;
+            break;
+        }
+        default:
+            throw std::runtime_error("Unexpected type of primitive");
+        }
+        primitive_point = m_primitive.rotation * primitive_point + m_primitive.position;
+    } while (glm::length(primitive_point - point) < 1e-8);
 
     return glm::normalize(primitive_point - point);
 }
@@ -80,7 +82,7 @@ float PrimitiveDistribution::pdf(glm::vec3 point, glm::vec3 normal, glm::vec3 di
     float t = intersection.value();
     float result = get_point_pdf(m_primitive, ray, t);
 
-    static const float SHIFT = 1e-4;
+    static const float SHIFT = 1e-5;
     Ray inner_ray(point + direction * (t + SHIFT), direction);
     intersection = intersect_ray_with_primitive(inner_ray, m_primitive);
     if (intersection.has_value()){

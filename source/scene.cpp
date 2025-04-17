@@ -57,7 +57,7 @@ glm::vec3 Scene::raytrace(Ray ray, pcg32_random_t &rng, int depth)
     glm::vec3 point = ray.position + ray.direction * t;
 
     glm::vec3 normal = primitive.get_normal(point);
-    static const float SHIFT = 1e-4;
+    static const float SHIFT = 1e-3;
 
     float normal_direction_cos = glm::dot(normal, ray.direction);
     bool inside = (normal_direction_cos > 0);
@@ -111,21 +111,15 @@ glm::vec3 Scene::raytrace(Ray ray, pcg32_random_t &rng, int depth)
     }
     case (DIFFUSE):
     {
-        // glm::vec3 w = random_cos_weighted(normal);
         glm::vec3 w = mis_distribution.sample(point, normal, rng);
         float normal_w_cos = glm::dot(w, normal);
-        if (std::isnan(sum(w)) || normal_w_cos < 1e-8) {
+        if (normal_w_cos <= 0) {
             return primitive.emission;
         }
         float pdf = mis_distribution.pdf(point, normal, w);
         Ray random_ray = Ray(point + w * SHIFT, w);
         glm::vec3 L_in = raytrace(random_ray, rng, depth + 1);
-        // return primitive.emission + primitive.color / glm::pi<float>() * L_in * glm::dot(w, normal) / cos_distribution.pdf(point, normal, w);
-        glm::vec3 add = primitive.color / glm::pi<float>() * L_in * normal_w_cos / pdf;
-        if (std::isnan(sum(add))) {
-            return primitive.emission;
-        }
-        return primitive.emission + add;
+        return primitive.emission + primitive.color / glm::pi<float>() * L_in * normal_w_cos / pdf;
     }
     case (METALLIC):
         return raytrace(reflected_ray, rng, depth + 1) * primitive.color + primitive.emission;
