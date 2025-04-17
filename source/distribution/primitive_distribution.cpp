@@ -59,13 +59,13 @@ float get_point_pdf(const Primitive& primitive, Ray ray, float ray_position) {
     {
     case BOX: {
         glm::vec3 pairwice = pairwice_product(primitive.geom);
-        p_y = 1.f / 4 / glm::pi<float>() / glm::length(primitive_normal * pairwice);
+        p_y = 1.f / 8.f / glm::pi<float>() / glm::length(primitive_normal * pairwice);
         break;
     }
     case ELLIPSOID:
     {
         glm::vec3 pairwice = pairwice_product(primitive.geom);
-        p_y = 1.f / 4 / glm::pi<float>() / glm::length(primitive_normal * pairwice);
+        p_y = 1.f / 8.f / glm::pi<float>() / glm::length(primitive_normal * pairwice);
 
         break;
     }
