@@ -18,7 +18,7 @@ public:
 
     // returns position on the ray and primitive index
     std::optional<std::pair<float, size_t>> intersect(Ray ray, float max_distance = std::numeric_limits<float>::infinity());
-    glm::vec3 raytrace(Ray ray, int depth = 0);
+    glm::vec3 raytrace(Ray ray, pcg32_random_t &rng, int depth = 0);
 
     int width, height;
     glm::vec3 background_color;

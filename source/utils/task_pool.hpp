@@ -5,6 +5,7 @@
 #include <random>
 
 #include "scene.hpp"
+#include "random.hpp"
 
 struct RaytrasyngTask {
     RaytrasyngTask(int x = 0, int y = 0);

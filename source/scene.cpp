@@ -40,7 +40,7 @@ Scene::intersect(Ray ray, float max_distance)
     return intersection;
 }
 
-glm::vec3 Scene::raytrace(Ray ray, int depth)
+glm::vec3 Scene::raytrace(Ray ray, pcg32_random_t &rng, int depth)
 {
     if (depth >= max_ray_depth)
     {
@@ -85,7 +85,7 @@ glm::vec3 Scene::raytrace(Ray ray, int depth)
 
         float sin_theta_2 = mu_1 / mu_2 * std::sqrt(1 - std::pow(cos_theta_1, 2));
         if (std::abs(sin_theta_2) > 1) {
-            return primitive.emission + raytrace(reflected_ray, depth + 1);
+            return primitive.emission + raytrace(reflected_ray, rng, depth + 1);
         }
         float cos_theta_2 = std::sqrt(1 - std::pow(sin_theta_2, 2));
 
@@ -93,16 +93,16 @@ glm::vec3 Scene::raytrace(Ray ray, int depth)
         float r_0 = std::pow((mu_1 - mu_2) / (mu_1 + mu_2), 2);
         float r = r_0 + (1 - r_0) * std::pow(1 - cos_theta_1, 5);
 
-        if (random_float(0, 1) < r) {
+        if (random_float(0, 1, rng) < r) {
             // choose reflection
-            return primitive.emission + raytrace(reflected_ray, depth + 1);
+            return primitive.emission + raytrace(reflected_ray, rng, depth + 1);
         }
         // choose refraction
         glm::vec3 refracted_direction = mu_1 / mu_2 * ray.direction + (cos_theta_1 * mu_1 / mu_2 - cos_theta_2) * normal;
         refracted_direction = glm::normalize(refracted_direction);
         Ray refracted_ray(point + refracted_direction * SHIFT, refracted_direction);
 
-        glm::vec3 refracted_color = raytrace(refracted_ray, depth + 1);
+        glm::vec3 refracted_color = raytrace(refracted_ray, rng, depth + 1);
         if (!inside)
         {
             refracted_color *= primitive.color;
@@ -112,27 +112,23 @@ glm::vec3 Scene::raytrace(Ray ray, int depth)
     case (DIFFUSE):
     {
         // glm::vec3 w = random_cos_weighted(normal);
-        glm::vec3 w = mis_distribution.sample(point, normal);
+        glm::vec3 w = mis_distribution.sample(point, normal, rng);
         float normal_w_cos = glm::dot(w, normal);
         if (std::isnan(sum(w)) || normal_w_cos < 1e-8) {
             return primitive.emission;
         }
         float pdf = mis_distribution.pdf(point, normal, w);
-        if (pdf == 0.0) {
-            return primitive.emission;
-        }
-        // glm::vec3 w = cos_distribution.sample(point, normal);
         Ray random_ray = Ray(point + w * SHIFT, w);
-        glm::vec3 L_in = raytrace(random_ray, depth + 1);
+        glm::vec3 L_in = raytrace(random_ray, rng, depth + 1);
         // return primitive.emission + primitive.color / glm::pi<float>() * L_in * glm::dot(w, normal) / cos_distribution.pdf(point, normal, w);
         glm::vec3 add = primitive.color / glm::pi<float>() * L_in * normal_w_cos / pdf;
-        if (std::isnan(add.x)) {
+        if (std::isnan(sum(add))) {
             return primitive.emission;
         }
         return primitive.emission + add;
     }
     case (METALLIC):
-        return raytrace(reflected_ray, depth + 1) * primitive.color + primitive.emission;
+        return raytrace(reflected_ray, rng, depth + 1) * primitive.color + primitive.emission;
     }
 }
 

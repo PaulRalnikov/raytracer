@@ -24,6 +24,7 @@ TaskPool::TaskPool(std::vector<RaytrasyngTask> &&a_tasks, Scene &a_scene) :
 }
 
 void TaskPool::thread_loop() {
+    pcg32_random_t rng;
     while (running) {
         RaytrasyngTask task;
         {
@@ -41,9 +42,9 @@ void TaskPool::thread_loop() {
         glm::vec3 color(0.0);
         for (size_t i = 0; i < m_scene.samples; i++) {
             glm::vec2 vec_0_1(0, 1);
-            glm::vec2 coords = glm::vec2(task.x, task.y) + random_vec2(vec_0_1, vec_0_1);
+            glm::vec2 coords = glm::vec2(task.x, task.y) + random_vec2(vec_0_1, vec_0_1, rng);
             Ray ray = m_scene.ray_to_pixel(coords);
-            color += m_scene.raytrace(ray);
+            color += m_scene.raytrace(ray, rng);
         }
         color /= m_scene.samples;
 

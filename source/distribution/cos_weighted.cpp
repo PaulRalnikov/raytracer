@@ -5,8 +5,8 @@
 
 #include "utils/random.hpp"
 
-glm::vec3 CosWeighttedDistrubution::sample(glm::vec3 point, glm::vec3 normal) const {
-    glm::vec3 v = random_normal_vec3();
+glm::vec3 CosWeighttedDistrubution::sample(glm::vec3 point, glm::vec3 normal, pcg32_random_t& rng) const {
+    glm::vec3 v = random_normal_vec3(rng);
     return glm::normalize(v + normal);
 }
 
