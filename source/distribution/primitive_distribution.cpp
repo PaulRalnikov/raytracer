@@ -70,7 +70,7 @@ float get_point_pdf(const Primitive& primitive, Ray ray, float ray_position) {
         throw std::runtime_error("Unsupported type of primitive");
     }
     glm::vec3 y_min_x = ray.direction * ray_position;
-    return p_y * glm::dot(y_min_x, y_min_x) / glm::length(ray.direction * primitive_normal);
+    return p_y * glm::dot(y_min_x, y_min_x) / glm::abs(glm::dot(ray.direction, primitive_normal));
 }
 
 float PrimitiveDistribution::pdf(glm::vec3 point, glm::vec3 normal, glm::vec3 direction) const {
