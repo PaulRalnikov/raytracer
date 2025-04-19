@@ -66,7 +66,7 @@ glm::vec3 Scene::raytrace(Ray ray, pcg32_random_t &rng, int depth)
         normal *= -1;
         normal_direction_cos *= -1;
     }
-    glm::vec3 reflected_direction = ray.direction - 2 * normal_direction_cos * normal;
+    glm::vec3 reflected_direction = glm::normalize(ray.direction - 2 * normal_direction_cos * normal);
     reflected_direction = glm::normalize(reflected_direction);
     Ray reflected_ray(point + reflected_direction * SHIFT, reflected_direction);
 
