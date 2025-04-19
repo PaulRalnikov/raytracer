@@ -64,7 +64,7 @@ float get_point_pdf(const Primitive& primitive, Ray ray, float ray_legnth) {
     case ELLIPSOID: {
         glm::vec3 pairwice = pairwice_product(primitive.geom);
         glm::vec3 old_normal = primitive.get_unconverted_normal(intersection_point);
-        p_y = 1.f / 2.f / glm::pi<float>() / glm::length(old_normal * pairwice);
+        p_y = 1.f / 4.f / glm::pi<float>() / glm::length(old_normal * pairwice);
         break;
     }
     default:
@@ -86,7 +86,7 @@ float PrimitiveDistribution::pdf(glm::vec3 point, glm::vec3 normal, glm::vec3 di
     Ray inner_ray(point + direction * (t + SHIFT), direction);
     intersection = intersect_ray_with_primitive(inner_ray, m_primitive);
     if (intersection.has_value()){
-        result += get_point_pdf(m_primitive, inner_ray, intersection.value());
+        result += get_point_pdf(m_primitive, ray, intersection.value() + t + SHIFT);
     }
     return result;
 }
