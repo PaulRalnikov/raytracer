@@ -57,7 +57,7 @@ glm::vec3 Scene::raytrace(Ray ray, pcg32_random_t &rng, int depth)
     glm::vec3 point = ray.position + ray.direction * t;
 
     glm::vec3 normal = primitive.get_normal(point);
-    static const float SHIFT = 1e-3;
+    static const float SHIFT = 1e-4;
 
     float normal_direction_cos = glm::dot(normal, ray.direction);
     bool inside = (normal_direction_cos > 0);

@@ -47,7 +47,7 @@ glm::vec3 PrimitiveDistribution::sample(glm::vec3 point, glm::vec3 normal, pcg32
             throw std::runtime_error("Unexpected type of primitive");
         }
         primitive_point = m_primitive.rotation * primitive_point + m_primitive.position;
-    } while (glm::length(primitive_point - point) < 1e-8);
+    } while (glm::length(primitive_point - point) < 1e-4);
 
     return glm::normalize(primitive_point - point);
 }
@@ -82,7 +82,7 @@ float PrimitiveDistribution::pdf(glm::vec3 point, glm::vec3 normal, glm::vec3 di
     float t = intersection.value();
     float result = get_point_pdf(m_primitive, ray, t);
 
-    static const float SHIFT = 1e-5;
+    static const float SHIFT = 1e-4;
     Ray inner_ray(point + direction * (t + SHIFT), direction);
     intersection = intersect_ray_with_primitive(inner_ray, m_primitive);
     if (intersection.has_value()){
