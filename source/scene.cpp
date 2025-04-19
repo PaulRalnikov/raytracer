@@ -113,7 +113,7 @@ glm::vec3 Scene::raytrace(Ray ray, pcg32_random_t &rng, int depth)
     {
         glm::vec3 w = mis_distribution.sample(point, normal, rng);
         float normal_w_cos = glm::dot(w, normal);
-        if (normal_w_cos <= 0) {
+        if (normal_w_cos <= 0 || primitive.color == glm::vec3(0.0)) {
             return primitive.emission;
         }
         float pdf = mis_distribution.pdf(point, normal, w);

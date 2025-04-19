@@ -47,7 +47,7 @@ glm::vec3 PrimitiveDistribution::sample(glm::vec3 point, glm::vec3 normal, pcg32
             throw std::runtime_error("Unexpected type of primitive");
         }
         primitive_point = m_primitive.rotation * primitive_point + m_primitive.position;
-    } while (glm::length(primitive_point - point) < 1e-4);
+    } while (glm::length(primitive_point - point) < 1e-8);
 
     return glm::normalize(primitive_point - point);
 }
