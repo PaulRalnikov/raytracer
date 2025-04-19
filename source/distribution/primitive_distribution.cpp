@@ -53,8 +53,8 @@ glm::vec3 PrimitiveDistribution::sample(glm::vec3 point, glm::vec3 normal, pcg32
 }
 
 //returns pdf of point distribution
-float get_point_pdf(const Primitive& primitive, Ray ray, float ray_position) {
-    glm::vec3 intersection_point = ray.position + ray.direction * ray_position;
+float get_point_pdf(const Primitive& primitive, Ray ray, float ray_legnth) {
+    glm::vec3 intersection_point = ray.position + ray.direction * ray_legnth;
     glm::vec3 primitive_normal = primitive.get_normal(intersection_point);
 
     float p_y;
@@ -63,14 +63,15 @@ float get_point_pdf(const Primitive& primitive, Ray ray, float ray_position) {
     case BOX:
     case ELLIPSOID: {
         glm::vec3 pairwice = pairwice_product(primitive.geom);
-        p_y = 1.f / 4.f / glm::pi<float>() / glm::length(primitive_normal * pairwice);
+        glm::vec3 old_normal = glm::normalize(primitive.geom * primitive_normal);
+        p_y = 1.f / 4.f / glm::pi<float>() / glm::length(old_normal * pairwice);
         break;
     }
     default:
         throw std::runtime_error("Unsupported type of primitive");
     }
-    glm::vec3 y_min_x = ray.direction * ray_position;
-    return p_y * glm::dot(y_min_x, y_min_x) / glm::abs(glm::dot(ray.direction, primitive_normal));
+    glm::vec3 y_min_x = ray.direction * ray_legnth;
+    return p_y * ray_legnth * ray_legnth / glm::abs(glm::dot(ray.direction, primitive_normal));
 }
 
 float PrimitiveDistribution::pdf(glm::vec3 point, glm::vec3 normal, glm::vec3 direction) const {

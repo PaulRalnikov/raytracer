@@ -13,7 +13,7 @@ glm::vec3 Primitive::get_normal(glm::vec3 point) const {
             normal = geom;
             break;
         case (ELLIPSOID):
-            normal = glm::normalize(point / geom / geom);
+            normal = glm::normalize(point / geom);
             break;
         case BOX:
         {
