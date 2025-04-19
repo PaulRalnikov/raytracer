@@ -32,6 +32,7 @@ struct Primitive
     float ior; //only for diellectric materials
 
     glm::vec3 get_normal(glm::vec3 point) const;
+    glm::vec3 get_unconverted_normal(glm::vec3 point) const;
 };
 
 

@@ -63,14 +63,13 @@ float get_point_pdf(const Primitive& primitive, Ray ray, float ray_legnth) {
     case BOX:
     case ELLIPSOID: {
         glm::vec3 pairwice = pairwice_product(primitive.geom);
-        glm::vec3 old_normal = glm::normalize(primitive.geom * primitive_normal);
-        p_y = 1.f / 4.f / glm::pi<float>() / glm::length(old_normal * pairwice);
+        glm::vec3 old_normal = primitive.get_unconverted_normal(intersection_point);
+        p_y = 1.f / 2.f / glm::pi<float>() / glm::length(old_normal * pairwice);
         break;
     }
     default:
         throw std::runtime_error("Unsupported type of primitive");
     }
-    glm::vec3 y_min_x = ray.direction * ray_legnth;
     return p_y * ray_legnth * ray_legnth / glm::abs(glm::dot(ray.direction, primitive_normal));
 }
 
