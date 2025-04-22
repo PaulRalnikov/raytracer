@@ -182,11 +182,16 @@ void Scene::readTxt(std::string txt_path)
             in >> plane;
             primitives.emplace_back(plane);
         }
-        else if (command == "ELLIPSOID")
-        {
+        else if (command == "ELLIPSOID") {
             Ellipsoid ellipsoid;
             in >> ellipsoid;
             primitives.push_back(ellipsoid);
+        } else if (command == "TRIANGLE")
+        {
+            Triangle triangle;
+            in >> triangle;
+            primitives.push_back(triangle);
+            std::cout << triangle << std::endl;
         }
     }
 
@@ -213,6 +218,7 @@ void Scene::readTxt(std::string txt_path)
             }
 
             void operator()(const Plane& plane) {}
+            void operator()(const Triangle& triangle) {}
 
             std::shared_ptr<MixDistribution> distribution;
             bool& fl;

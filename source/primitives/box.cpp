@@ -27,7 +27,7 @@ std::ifstream &operator>>(std::ifstream &in, Box &box) {
         else if (command == "IOR") {
             in >> box.ior;
             box.material = MaterialType::DIELECTRIC;
-        } else {
+        } else if (command == "NEW_PRIMITIVE") {
             break;
         }
     }

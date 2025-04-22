@@ -3,7 +3,7 @@
 std::ostream& operator<<(std::ostream &out, const Primitive &primitive) {
     auto caller = [&out](const auto& prim) {out << prim;};
     std::visit(caller, primitive);
-    
+
     return out;
 }
 
@@ -29,25 +29,16 @@ glm::vec3 get_emission(const Primitive &primitive) {
 
 glm::vec3 get_normal(const Primitive &primitive, glm::vec3 point) {
     struct Visitor{
+        glm::vec3 operator()(const Box &prim) { return prim.get_normal(point); }
         glm::vec3 operator()(const Plane& plane) {return plane.get_normal(); }
-        glm::vec3 operator()(const Box& prim) { return prim.get_normal(point); }
-        glm::vec3 operator()(const Ellipsoid& prim) { return prim.get_normal(point); }
+        glm::vec3 operator()(const Ellipsoid& ellipsoid) { return ellipsoid.get_normal(point); }
+        glm::vec3 operator()(const Triangle &triangle) { return triangle.get_normal(); }
 
         glm::vec3 point;
     };
     return std::visit(Visitor{point}, primitive);
 }
 
-glm::vec3 get_unconverted_normal(const Primitive &primitive, glm::vec3 point) {
-    struct Visitor {
-        glm::vec3 operator()(const Plane &plane) { return plane.get_unconverted_normal(); }
-        glm::vec3 operator()(const Box &prim) { return prim.get_unconverted_normal(point); }
-        glm::vec3 operator()(const Ellipsoid &prim) { return prim.get_unconverted_normal(point); }
-
-        glm::vec3 point;
-    };
-    return std::visit(Visitor{point}, primitive);
-}
 std::optional<float> iintersect(const Ray &ray, const Primitive &primitive) {
     auto caller = [&ray](const auto& prim) {
         return intersect(ray, prim);

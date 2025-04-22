@@ -27,7 +27,7 @@ std::ifstream &operator>>(std::ifstream &in, Ellipsoid &ellipsoid) {
         else if (command == "IOR") {
             in >> ellipsoid.ior;
             ellipsoid.material = MaterialType::DIELECTRIC;
-        } else {
+        } else if (command == "NEW_PRIMITIVE") {
             break;
         }
     }

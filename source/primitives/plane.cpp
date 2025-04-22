@@ -1,10 +1,6 @@
 #include "plane.hpp"
 #include <glm/glm.hpp>
 
-glm::vec3 Plane::get_unconverted_normal() const {
-    return normal;
-}
-
 glm::vec3 Plane::get_normal() const {
     return rotation * normal;
 }
@@ -35,7 +31,7 @@ std::ifstream &operator>>(std::ifstream &in, Plane &plane) {
         else if (command == "IOR") {
             in >> plane.ior;
             plane.material = MaterialType::DIELECTRIC;
-        } else {
+        } else if (command == "NEW_PRIMITIVE") {
             break;
         }
     }

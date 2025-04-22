@@ -19,7 +19,7 @@ struct Plane
     float ior = 0.0; // only for diellectric materials
 
     glm::vec3 get_normal() const;
-    glm::vec3 get_unconverted_normal() const;
+    // glm::vec3 get_unconverted_normal() const;
 };
 
 std::ifstream& operator>>(std::ifstream &in, Plane &plane);
