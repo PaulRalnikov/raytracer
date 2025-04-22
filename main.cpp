@@ -5,14 +5,18 @@
 #include <cassert>
 #include <vector>
 
-#include "glm/vec3.hpp"
-#include "glm/vec4.hpp"
-#include "glm/gtx/quaternion.hpp"
+#include <glm/glm.hpp>
 
-#include "source/primitive.hpp"
-#include "source/scene.hpp"
-#include "source/task_pool.hpp"
-#include "source/random.hpp"
+#ifndef STB_IMAGE_WRITE_IMPLEMENTATION
+    #define STB_IMAGE_WRITE_IMPLEMENTATION
+#endif
+
+#include "stb_image_write.h"
+
+#include "primitive.hpp"
+#include "scene.hpp"
+#include "utils/task_pool.hpp"
+#include "utils/random.hpp"
 
 glm::vec3 saturate(glm::vec3 const &color)
 {
@@ -37,7 +41,7 @@ glm::vec3 gamma_correction(glm::vec3 color) {
     return glm::vec3(glm::pow(color.x, exp), glm::pow(color.y, exp), glm::pow(color.z, exp));
 }
 
-void write_to_output(std::string output_path, std::vector<glm::vec3> pixels, const Scene& scene) {
+std::vector<unsigned char> get_real_pixels(std::vector<glm::vec3> pixels) {
     std::vector<unsigned char> real_pixels(pixels.size() * 3);
 
     for (size_t i = 0; i < pixels.size(); i++) {
@@ -48,10 +52,20 @@ void write_to_output(std::string output_path, std::vector<glm::vec3> pixels, con
         real_pixels[i * 3 + 1] = color_to_byte(pixels[i].y);
         real_pixels[i * 3 + 2] = color_to_byte(pixels[i].z);
     }
+    return real_pixels;
+}
 
-    std::ofstream out;
+std::string path_withoud_extention(std::string path) {
+    while (path.back() != '.') {
+        path.pop_back();
+    }
+    path.pop_back();
+    return path;
+}
 
-    out.open(output_path);
+void write_to_output(std::string output_path, std::vector<unsigned char> real_pixels, const Scene &scene)
+{
+    std::ofstream out(output_path);
     out << "P6\n";
     out << scene.width << ' ' << scene.height << '\n';
     out << 255 << '\n';
@@ -60,6 +74,9 @@ void write_to_output(std::string output_path, std::vector<glm::vec3> pixels, con
     out.open(output_path, std::ios::binary | std::ios::app);
     out.write(reinterpret_cast<const char *>(real_pixels.data()), real_pixels.size());
     out.close();
+
+    std::string png_path = path_withoud_extention(output_path) + ".png";
+    stbi_write_png(png_path.data(), scene.width, scene.height, 3, real_pixels.data(), scene.width * 3);
 }
 
 int main(int argc, char *argv[])
@@ -71,8 +88,6 @@ int main(int argc, char *argv[])
     Scene scene;
     scene.readTxt(input_path);
 
-    std::cout << scene.primitives.size() << std::endl;
-
     auto start = std::chrono::high_resolution_clock::now();
 
     size_t pixels_count = scene.width * scene.height;
@@ -80,44 +95,27 @@ int main(int argc, char *argv[])
 
     std::vector<glm::vec3> pixels(pixels_count);
 
-    std::vector<RaytrasyngTask> tasks;
-    tasks.reserve(pixels_count * scene.samples);
-
-    //vector of futures for each pixel
-    std::vector<std::vector<std::future<glm::vec3> > > futures(
-        pixels_count
-    );
+    std::vector<RaytrasyngTask> tasks(pixels_count);
+    std::vector<std::future<glm::vec3> > futures(pixels_count);
 
     for (int x = 0; x < scene.width; x++)
     {
         for (int y = 0; y < scene.height; y++)
         {
             size_t i = y * scene.width + x;
-            futures[i].reserve(scene.samples);
-            for (size_t j = 0; j < scene.samples; j++) {
-                glm::vec2 coords(x + random_float(0, 1), y + random_float(0, 1));
-                // glm::vec2 coords(x + 0.5, y + 0.5);
-                Ray ray = scene.ray_to_pixel(coords);
-                tasks.push_back(RaytrasyngTask(ray));
-                futures[i].push_back(tasks.back().color.get_future());
-            }
-
+            tasks[i] = RaytrasyngTask(x, y);
+            futures[i] = tasks[i].color.get_future();
         }
     }
-
-    std::cout << "tasks count: " << tasks.size() << '\n';
 
     TaskPool pool(std::move(tasks), scene);
 
     for (size_t i = 0; i < pixels_count; i++) {
-        pixels[i] = glm::vec3(0.0);
-        for (size_t j = 0; j < scene.samples; j++) {
-            pixels[i] += futures[i][j].get();
-        }
-        pixels[i] /= scene.samples;
+        pixels[i] = futures[i].get();
     }
 
-    write_to_output(output_path, pixels, scene);
+    std::vector<unsigned char> real_pixels = get_real_pixels(pixels);
+    write_to_output(output_path, real_pixels, scene);
 
     auto end = std::chrono::high_resolution_clock::now();
     std::chrono::duration<double> duration = end - start;

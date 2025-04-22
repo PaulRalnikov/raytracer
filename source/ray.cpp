@@ -1,10 +1,10 @@
 #include "ray.hpp"
+
 #include <cmath>
-#include "my_glm.hpp"
-#include "../glm/glm.hpp"
-#include "../glm/gtx/quaternion.hpp"
-#include "../glm/mat4x4.hpp"
-#include "../glm/ext/matrix_transform.hpp"
+#include <glm/glm.hpp>
+
+#include "utils/my_glm.hpp"
+
 
 #define GLM_FORCE_QUAT_DATA_WXYZ
 

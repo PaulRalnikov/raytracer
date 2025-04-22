@@ -3,7 +3,8 @@
 #include <string>
 #include <iostream>
 #include <fstream>
-#include "my_glm.hpp"
+
+#include "utils/my_glm.hpp"
 
 enum PrimitiveType
 {
@@ -30,7 +31,8 @@ struct Primitive
     MaterialType material = DIFFUSE;
     float ior; //only for diellectric materials
 
-    glm::vec3 get_normal(glm::vec3 point);
+    glm::vec3 get_normal(glm::vec3 point) const;
+    glm::vec3 get_unconverted_normal(glm::vec3 point) const;
 };
 
 

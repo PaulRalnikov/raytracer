@@ -1,9 +1,14 @@
 #pragma once
+#include <limits>
 #include <vector>
-#include "../glm/vec2.hpp"
+
+#include <glm/vec2.hpp>
+
 #include "primitive.hpp"
 #include "ray.hpp"
-#include <limits>
+#include "distribution/cos_weighted.hpp"
+#include "distribution/primitive_distribition.hpp"
+#include "distribution/mix.hpp"
 
 struct Scene {
 public:
@@ -13,7 +18,7 @@ public:
 
     // returns position on the ray and primitive index
     std::optional<std::pair<float, size_t>> intersect(Ray ray, float max_distance = std::numeric_limits<float>::infinity());
-    glm::vec3 raytrace(Ray ray, int depth = 0);
+    glm::vec3 raytrace(Ray ray, pcg32_random_t &rng, int depth = 0);
 
     int width, height;
     glm::vec3 background_color;
@@ -28,5 +33,6 @@ public:
     size_t samples; //ray per pixel
 
     std::vector<Primitive> primitives;
+    MixDistribution mis_distribution;
 };
 
