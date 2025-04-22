@@ -14,4 +14,4 @@ struct Ray
 
 std::ostream& operator<< (std::ostream& out, const Ray& ray);
 
-std::optional<float> intersect_ray_with_primitive(Ray ray, Primitive primitive);
+std::optional<float> intersect(Ray ray, Primitive primitive);

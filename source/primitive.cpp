@@ -4,6 +4,37 @@
 
 #include "utils/my_glm.hpp"
 
+std::ifstream &operator>>(std::ifstream &in, Primitive &primitive) {
+    std::string command;
+    while (in >> command) {
+        if (command == "POSITION") {
+            in >> primitive.position;
+        }
+        else if (command == "ROTATION") {
+            in >> primitive.rotation;
+        }
+        else if (command == "EMISSION") {
+            in >> primitive.emission;
+        }
+        else if (command == "COLOR") {
+            in >> primitive.color;
+        }
+        else if (command == "METALLIC") {
+            primitive.material = METALLIC;
+        }
+        else if (command == "DIELECTRIC") {
+            primitive.material = DIELECTRIC;
+        }
+        else if (command == "IOR") {
+            in >> primitive.ior;
+            primitive.material = DIELECTRIC;
+        } else {
+            break;
+        }
+    }
+    return in;
+}
+
 glm::vec3 Primitive::get_normal(glm::vec3 point) const {
     point -= position;
     point = rotation.inverse() * point;
@@ -15,27 +46,6 @@ glm::vec3 Primitive::get_normal(glm::vec3 point) const {
         case (ELLIPSOID):
             normal = glm::normalize(point / geom / geom);
             break;
-        case BOX:
-        {
-            //hack: abs maximal component of (point / geom) is 1; if set zero to others, we get normal
-            glm::vec3 hack = point / geom;
-            glm::vec3 abs_hack = glm::abs(hack);
-            if (abs_hack.x >= std::max(abs_hack.y, abs_hack.z)) {
-                hack.y = 0;
-                hack.z = 0;
-            }
-            else if (abs_hack.y >= std::max(abs_hack.x, abs_hack.z))
-            {
-                hack.x = 0;
-                hack.z = 0;
-            }
-            else if (abs_hack.z >= std::max(abs_hack.x, abs_hack.y))
-            {
-                hack.x = 0;
-                hack.y = 0;
-            }
-            normal = glm::normalize(hack);
-        }
     }
     return glm::normalize(rotation * normal);
 }
@@ -53,28 +63,6 @@ glm::vec3 Primitive::get_unconverted_normal(glm::vec3 point) const
     case (ELLIPSOID):
         normal = glm::normalize(point / geom);
         break;
-    case BOX:
-    {
-        // hack: abs maximal component of (point / geom) is 1; if set zero to others, we get normal
-        glm::vec3 hack = point / geom;
-        glm::vec3 abs_hack = glm::abs(hack);
-        if (abs_hack.x >= std::max(abs_hack.y, abs_hack.z))
-        {
-            hack.y = 0;
-            hack.z = 0;
-        }
-        else if (abs_hack.y >= std::max(abs_hack.x, abs_hack.z))
-        {
-            hack.x = 0;
-            hack.z = 0;
-        }
-        else if (abs_hack.z >= std::max(abs_hack.x, abs_hack.y))
-        {
-            hack.x = 0;
-            hack.y = 0;
-        }
-        normal = glm::normalize(hack);
-    }
     }
     return normal;
 }
@@ -87,8 +75,6 @@ std::string to_string(PrimitiveType type)
         return "PLANE";
     case ELLIPSOID:
         return "ELLIPSOID";
-    case BOX:
-        return "BOX";
     default:
         return "UNKNOWN";
     }

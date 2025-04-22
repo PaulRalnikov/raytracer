@@ -5,19 +5,12 @@
 #include <fstream>
 
 #include "utils/my_glm.hpp"
+#include "primitives/material.hpp"
 
 enum PrimitiveType
 {
     PLANE,
     ELLIPSOID,
-    BOX
-};
-
-enum MaterialType
-{
-    METALLIC,
-    DIELECTRIC,
-    DIFFUSE
 };
 
 struct Primitive
@@ -35,6 +28,7 @@ struct Primitive
     glm::vec3 get_unconverted_normal(glm::vec3 point) const;
 };
 
+std::ifstream& operator>> (std::ifstream& in, Primitive& primitive);
 
 std::string to_string(PrimitiveType type);
 

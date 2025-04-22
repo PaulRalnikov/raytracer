@@ -6,6 +6,7 @@
 #include <glm/glm.hpp>
 #include <glm/gtc/constants.hpp>
 
+#include "primitives/pprimitive.hpp"
 #include "scene.hpp"
 #include "ray.hpp"
 #include "utils/random.hpp"
@@ -26,14 +27,11 @@ Scene::intersect(Ray ray, float max_distance)
     std::optional<std::pair<float, size_t>> intersection = {};
     for (size_t i = 0; i < primitives.size(); i++)
     {
-        auto &primitive = primitives[i];
-        std::optional<float> prim_intersect = intersect_ray_with_primitive(ray, primitive);
-
-        if (!prim_intersect.has_value() || prim_intersect.value() > max_distance)
+        std::optional<float> prim_intersect = iintersect(ray, primitives[i]);
+        if (!prim_intersect.has_value() || prim_intersect.value() > max_distance) {
             continue;
-
-        if (!intersection.has_value() || intersection.value().first > prim_intersect.value())
-        {
+        }
+        if (!intersection.has_value() || intersection.value().first > prim_intersect.value()) {
             intersection = std::make_pair(prim_intersect.value(), i);
         }
     }
@@ -51,12 +49,12 @@ glm::vec3 Scene::raytrace(Ray ray, pcg32_random_t &rng, int depth)
         return background_color;
 
     size_t i = intersection.value().second;
-    Primitive &primitive = primitives[i];
+    PPrimitive &primitive = primitives[i];
 
     float t = intersection.value().first; // ray position
     glm::vec3 point = ray.position + ray.direction * t;
 
-    glm::vec3 normal = primitive.get_normal(point);
+    glm::vec3 normal = get_normal(primitive, point);
     static const float SHIFT = 1e-4;
 
     float normal_direction_cos = glm::dot(normal, ray.direction);
@@ -70,13 +68,13 @@ glm::vec3 Scene::raytrace(Ray ray, pcg32_random_t &rng, int depth)
     reflected_direction = glm::normalize(reflected_direction);
     Ray reflected_ray(point + reflected_direction * SHIFT, reflected_direction);
 
-    switch (primitive.material)
+    switch (get_material_type(primitive))
     {
     case (DIELECTRIC):
     {
         // Snell's law
         float mu_1 = 1;
-        float mu_2 = primitive.ior;
+        float mu_2 = get_ior(primitive);
 
         float cos_theta_1 = -normal_direction_cos;
         if (inside) {
@@ -85,7 +83,7 @@ glm::vec3 Scene::raytrace(Ray ray, pcg32_random_t &rng, int depth)
 
         float sin_theta_2 = mu_1 / mu_2 * std::sqrt(1 - std::pow(cos_theta_1, 2));
         if (std::abs(sin_theta_2) > 1) {
-            return primitive.emission + raytrace(reflected_ray, rng, depth + 1);
+            return get_emission(primitive) + raytrace(reflected_ray, rng, depth + 1);
         }
         float cos_theta_2 = std::sqrt(1 - std::pow(sin_theta_2, 2));
 
@@ -95,7 +93,7 @@ glm::vec3 Scene::raytrace(Ray ray, pcg32_random_t &rng, int depth)
 
         if (random_float(0, 1, rng) < r) {
             // choose reflection
-            return primitive.emission + raytrace(reflected_ray, rng, depth + 1);
+            return get_emission(primitive) + raytrace(reflected_ray, rng, depth + 1);
         }
         // choose refraction
         glm::vec3 refracted_direction = mu_1 / mu_2 * ray.direction + (cos_theta_1 * mu_1 / mu_2 - cos_theta_2) * normal;
@@ -103,26 +101,25 @@ glm::vec3 Scene::raytrace(Ray ray, pcg32_random_t &rng, int depth)
         Ray refracted_ray(point + refracted_direction * SHIFT, refracted_direction);
 
         glm::vec3 refracted_color = raytrace(refracted_ray, rng, depth + 1);
-        if (!inside)
-        {
-            refracted_color *= primitive.color;
+        if (!inside) {
+            refracted_color *= get_color(primitive);
         }
-        return primitive.emission + refracted_color;
+        return get_emission(primitive) + refracted_color;
     }
     case (DIFFUSE):
     {
         glm::vec3 w = mis_distribution.sample(point, normal, rng);
         float normal_w_cos = glm::dot(w, normal);
-        if (normal_w_cos <= 0 || primitive.color == glm::vec3(0.0)) {
-            return primitive.emission;
+        if (normal_w_cos <= 0 || get_color(primitive) == glm::vec3(0.0)) {
+            return get_emission(primitive);
         }
         float pdf = mis_distribution.pdf(point, normal, w);
         Ray random_ray = Ray(point + w * SHIFT, w);
         glm::vec3 L_in = raytrace(random_ray, rng, depth + 1);
-        return primitive.emission + primitive.color / glm::pi<float>() * L_in * normal_w_cos / pdf;
+        return get_emission(primitive) + get_color(primitive) / glm::pi<float>() * L_in * normal_w_cos / pdf;
     }
     case (METALLIC):
-        return raytrace(reflected_ray, rng, depth + 1) * primitive.color + primitive.emission;
+        return get_emission(primitive) + raytrace(reflected_ray, rng, depth + 1) * get_color(primitive);
     }
 }
 
@@ -134,90 +131,35 @@ void Scene::readTxt(std::string txt_path)
     std::string command;
     while (in >> command)
     {
-        if (command == "DIMENSIONS")
-        {
+        if (command == "DIMENSIONS") {
             in >> width >> height;
         }
-        else if (command == "BG_COLOR")
-        {
+        else if (command == "BG_COLOR") {
             in >> background_color.x >> background_color.y >> background_color.z;
         }
-        else if (command == "CAMERA_POSITION")
-        {
+        else if (command == "CAMERA_POSITION") {
             in >> camera_position.x >> camera_position.y >> camera_position.z;
         }
-        else if (command == "CAMERA_RIGHT")
-        {
+        else if (command == "CAMERA_RIGHT") {
             in >> camera_right.x >> camera_right.y >> camera_right.z;
         }
-        else if (command == "CAMERA_UP")
-        {
+        else if (command == "CAMERA_UP") {
             in >> camera_up.x >> camera_up.y >> camera_up.z;
         }
-        else if (command == "CAMERA_FORWARD")
-        {
+        else if (command == "CAMERA_FORWARD") {
             in >> camera_forward.x >> camera_forward.y >> camera_forward.z;
         }
-        else if (command == "CAMERA_FOV_X")
-        {
+        else if (command == "CAMERA_FOV_X") {
             in >> fov_x;
         }
-        else if (command == "SAMPLES")
-        {
+        else if (command == "SAMPLES") {
             in >> samples;
         }
-        else if (command == "NEW_PRIMITIVE")
-        {
-            primitives.push_back(Primitive());
-        }
-        else if (command == "PLANE")
-        {
-            primitives.back().type = PLANE;
-            in >> primitives.back().geom;
-            primitives.back().geom = glm::normalize(primitives.back().geom);
-        }
-        else if (command == "ELLIPSOID")
-        {
-            primitives.back().type = ELLIPSOID;
-            in >> primitives.back().geom;
-        }
-        else if (command == "BOX")
-        {
-            primitives.back().type = BOX;
-            in >> primitives.back().geom;
-        }
-        else if (command == "POSITION")
-        {
-            in >> primitives.back().position;
-        }
-        else if (command == "ROTATION")
-        {
-            in >> primitives.back().rotation;
-        }
-        else if (command == "EMISSION")
-        {
-            in >> primitives.back().emission;
-        }
-        else if (command == "COLOR")
-        {
-            in >> primitives.back().color;
-        }
-        else if (command == "METALLIC")
-        {
-            primitives.back().material = METALLIC;
-        }
-        else if (command == "DIELECTRIC")
-        {
-            primitives.back().material = DIELECTRIC;
-        }
-        else if (command == "IOR")
-        {
-            in >> primitives.back().ior;
-            primitives.back().material = DIELECTRIC;
-        }
-        else if (command == "RAY_DEPTH")
-        {
+        else if (command == "RAY_DEPTH") {
             in >> max_ray_depth;
+        }
+        else if (command == "NEW_PRIMITIVE") {
+            break;
         }
     }
 
@@ -226,23 +168,46 @@ void Scene::readTxt(std::string txt_path)
 
     fov_y = atan(height / (float)width * tan(fov_x / 2)) * 2;
 
+    while (in >> command) {
+        if (command == "BOX") {
+            Box box;
+            in >> box;
+            primitives.emplace_back(box);
+        } else {
+            Primitive primitive;
+            if (command == "PLANE")
+            {
+                primitive.type = PLANE;
+                in >> primitive.geom;
+                primitive.geom = glm::normalize(primitive.geom);
+            }
+            else if (command == "ELLIPSOID")
+            {
+                primitive.type = ELLIPSOID;
+                in >> primitive.geom;
+            }
+            in >> primitive;
+            primitives.push_back(primitive);
+        }
+    }
+
     // direct light sampling
     auto dis_distribution = std::make_shared<MixDistribution>();
 
     bool fl = false;
-    for (const auto &el : primitives)
-    {
-        if (el.type != PLANE && el.emission != glm::vec3(0.0)) {
-            dis_distribution->add_distribution(
-                std::make_shared<PrimitiveDistribution>(el)
-            );
-            fl = true;
-        }
-        std::cout << el << '\n';
-        std::cout << "==============================" << std::endl;
-    }
+    // for (const auto &el : primitives)
+    // {
+    //     if (el.type != PLANE && el.emission != glm::vec3(0.0)) {
+    //         dis_distribution->add_distribution(
+    //             std::make_shared<PrimitiveDistribution>(el)
+    //         );
+    //         fl = true;
+    //     }
+    //     std::cout << el << '\n';
+    //     std::cout << "==============================" << std::endl;
+    // }
     mis_distribution.add_distribution(std::make_shared<CosWeighttedDistrubution>());
-    if (fl) {
-        mis_distribution.add_distribution(dis_distribution);
-    }
+    // if (fl) {
+    //     mis_distribution.add_distribution(dis_distribution);
+    // }
 }

@@ -23,7 +23,7 @@ static void sort(float& x, float& y) {
     }
 }
 
-std::optional<float> intersect_ray_with_primitive (Ray ray, Primitive primitive) {
+std::optional<float> intersect (Ray ray, Primitive primitive) {
     my_quat q_hat = primitive.rotation.inverse();
     ray.position -= primitive.position;
     ray.position = q_hat * ray.position;
@@ -62,23 +62,6 @@ std::optional<float> intersect_ray_with_primitive (Ray ray, Primitive primitive)
             if (t1 < 0 && t2 < 0)
                 return {};
 
-            return std::max(t1, t2);
-        }
-        case BOX: {
-            glm::vec3 t_vec1 = (primitive.geom - ray.position) / ray.direction;
-            glm::vec3 t_vec2 = (- primitive.geom - ray.position) / ray.direction;
-            sort(t_vec1.x, t_vec2.x);
-            sort(t_vec1.y, t_vec2.y);
-            sort(t_vec1.z, t_vec2.z);
-
-            float t1 = vec_max(t_vec1);
-            float t2 = vec_min(t_vec2);
-            if (t1 > t2)
-                return {};
-            if (t1 > 0 && t2 > 0)
-                return std::min(t1, t2);
-            if (t1 < 0 && t2 < 0)
-                return {};
             return std::max(t1, t2);
         }
         default:

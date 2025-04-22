@@ -1,9 +1,11 @@
 #pragma once
 #include <limits>
 #include <vector>
+#include <variant>
 
 #include <glm/vec2.hpp>
 
+#include "primitives/pprimitive.hpp"
 #include "primitive.hpp"
 #include "ray.hpp"
 #include "distribution/cos_weighted.hpp"
@@ -30,9 +32,9 @@ public:
     float tan_fov_x_2;
     float tan_fov_y_2;
     int max_ray_depth;
-    size_t samples; //ray per pixel
+    size_t samples; //rays count per pixel
 
-    std::vector<Primitive> primitives;
+    std::vector<PPrimitive> primitives;
     MixDistribution mis_distribution;
 };
 
