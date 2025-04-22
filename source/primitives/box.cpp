@@ -35,12 +35,12 @@ std::ifstream &operator>>(std::ifstream &in, Box &box) {
 }
 
 glm::vec3 Box::get_normal(glm::vec3 point) const {
-    point = rotation.inverse() * (point - position);
-    glm::vec3 unconverted_normal = get_unconverted_normal(point);
-    return glm::normalize(rotation * unconverted_normal);
+    return glm::normalize(rotation * get_unconverted_normal(point));
 }
 
 glm::vec3 Box::get_unconverted_normal(glm::vec3 point) const {
+    point = rotation.inverse() * (point - position);
+
     // hack: abs maximal component of (point / geom) is 1; if set zero to others, we get normal
     glm::vec3 hack = point / size;
     glm::vec3 abs_hack = glm::abs(hack);

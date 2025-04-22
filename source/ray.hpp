@@ -2,10 +2,9 @@
 #include <optional>
 #include <iostream>
 
-#include "primitive.hpp"
+#include <glm/glm.hpp>
 
-struct Ray
-{
+struct Ray {
     explicit Ray(glm::vec3 pos = glm::vec3(), glm::vec3 dir = glm::vec3());
 
     glm::vec3 position;
@@ -13,5 +12,3 @@ struct Ray
 };
 
 std::ostream& operator<< (std::ostream& out, const Ray& ray);
-
-std::optional<float> intersect(Ray ray, Primitive primitive);

@@ -6,7 +6,7 @@
 #include <glm/glm.hpp>
 #include <glm/gtc/constants.hpp>
 
-#include "primitives/pprimitive.hpp"
+#include "primitives/primitive.hpp"
 #include "scene.hpp"
 #include "ray.hpp"
 #include "utils/random.hpp"
@@ -49,7 +49,7 @@ glm::vec3 Scene::raytrace(Ray ray, pcg32_random_t &rng, int depth)
         return background_color;
 
     size_t i = intersection.value().second;
-    PPrimitive &primitive = primitives[i];
+    Primitive &primitive = primitives[i];
 
     float t = intersection.value().first; // ray position
     glm::vec3 point = ray.position + ray.direction * t;
@@ -177,15 +177,12 @@ void Scene::readTxt(std::string txt_path)
             Plane plane;
             in >> plane;
             primitives.emplace_back(plane);
-        } else {
-            Primitive primitive;
-            if (command == "ELLIPSOID")
-            {
-                primitive.type = ELLIPSOID;
-                in >> primitive.geom;
-            }
-            in >> primitive;
-            primitives.push_back(primitive);
+        }
+        else if (command == "ELLIPSOID")
+        {
+            Ellipsoid ellipsoid;
+            in >> ellipsoid;
+            primitives.push_back(ellipsoid);
         }
     }
 

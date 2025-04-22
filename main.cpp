@@ -13,7 +13,6 @@
 
 #include "stb_image_write.h"
 
-#include "primitive.hpp"
 #include "scene.hpp"
 #include "utils/task_pool.hpp"
 #include "utils/random.hpp"

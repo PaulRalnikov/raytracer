@@ -5,8 +5,7 @@
 
 #include <glm/vec2.hpp>
 
-#include "primitives/pprimitive.hpp"
-#include "primitive.hpp"
+#include "primitives/primitive.hpp"
 #include "ray.hpp"
 #include "distribution/cos_weighted.hpp"
 #include "distribution/primitive_distribition.hpp"
@@ -34,7 +33,7 @@ public:
     int max_ray_depth;
     size_t samples; //rays count per pixel
 
-    std::vector<PPrimitive> primitives;
+    std::vector<Primitive> primitives;
     MixDistribution mis_distribution;
 };
 
