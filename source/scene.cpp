@@ -6,6 +6,9 @@
 #include <glm/glm.hpp>
 #include <glm/gtc/constants.hpp>
 
+#include "distribution/cos_weighted.hpp"
+#include "distribution/box.hpp"
+#include "distribution/ellipsoid.hpp"
 #include "primitives/primitive.hpp"
 #include "scene.hpp"
 #include "ray.hpp"
@@ -169,6 +172,7 @@ void Scene::readTxt(std::string txt_path)
     fov_y = atan(height / (float)width * tan(fov_x / 2)) * 2;
 
     while (in >> command) {
+
         if (command == "BOX") {
             Box box;
             in >> box;
@@ -190,19 +194,36 @@ void Scene::readTxt(std::string txt_path)
     auto dis_distribution = std::make_shared<MixDistribution>();
 
     bool fl = false;
-    // for (const auto &el : primitives)
-    // {
-    //     if (el.type != PLANE && el.emission != glm::vec3(0.0)) {
-    //         dis_distribution->add_distribution(
-    //             std::make_shared<PrimitiveDistribution>(el)
-    //         );
-    //         fl = true;
-    //     }
-    //     std::cout << el << '\n';
-    //     std::cout << "==============================" << std::endl;
-    // }
+    for (const auto &el : primitives)
+    {
+        struct Visitor
+        {
+            void operator()(const Box& box) {
+                if (box.emission != glm::vec3(0.0)) {
+                    distribution->add_distribution(std::make_shared<BoxDistribution>(box));
+                    fl = true;
+                }
+            }
+
+            void operator()(const Ellipsoid& ellipsoid) {
+                if (ellipsoid.emission != glm::vec3(0.0)) {
+                    std::cout << "ellipsoid: " << ellipsoid << std::endl;
+                    distribution->add_distribution(std::make_shared<EllipsoidDistribution>(ellipsoid));
+                    fl = true;
+                }
+            }
+
+            void operator()(const Plane& plane) {}
+
+            std::shared_ptr<MixDistribution> distribution;
+            bool& fl;
+        };
+        std::visit(Visitor{dis_distribution, fl}, el);
+    }
+
     mis_distribution.add_distribution(std::make_shared<CosWeighttedDistrubution>());
-    // if (fl) {
-    //     mis_distribution.add_distribution(dis_distribution);
-    // }
+    if (fl) {
+        std::cout << "Added dis distribution" << std::endl;
+        mis_distribution.add_distribution(dis_distribution);
+    }
 }

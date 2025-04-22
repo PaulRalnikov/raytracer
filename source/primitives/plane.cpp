@@ -43,6 +43,20 @@ std::ifstream &operator>>(std::ifstream &in, Plane &plane) {
 
 }
 
+std::ostream &operator<<(std::ostream &out, const Plane &plane) {
+    out << "Plane" << '\n';
+    out << "position: " << plane.position << '\n';
+    out << "normal: " << plane.normal << '\n';
+    out << "rotation: " << plane.rotation << '\n';
+    out << "color: " << plane.color << '\n';
+    out << "emission: " << plane.emission << '\n';
+    out << "matetial: " << to_string(plane.material) << '\n';
+    if (plane.material == MaterialType::DIELECTRIC) {
+        out << "ior: " << plane.ior;
+    }
+    return out;
+}
+
 std::optional<float> intersect(Ray ray, const Plane &plane) {
     my_quat q_hat = plane.rotation.inverse();
 

@@ -7,8 +7,6 @@
 
 #include "primitives/primitive.hpp"
 #include "ray.hpp"
-#include "distribution/cos_weighted.hpp"
-#include "distribution/primitive_distribition.hpp"
 #include "distribution/mix.hpp"
 
 struct Scene {

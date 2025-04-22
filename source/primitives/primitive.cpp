@@ -1,5 +1,12 @@
 #include "primitive.hpp"
 
+std::ostream& operator<<(std::ostream &out, const Primitive &primitive) {
+    auto caller = [&out](const auto& prim) {out << prim;};
+    std::visit(caller, primitive);
+    
+    return out;
+}
+
 MaterialType get_material_type(const Primitive &primitive) {
     auto caller = [](const auto &prim) {return prim.material;};
     return std::visit(caller, primitive);

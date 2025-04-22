@@ -34,6 +34,22 @@ std::ifstream &operator>>(std::ifstream &in, Ellipsoid &ellipsoid) {
     return in;
 }
 
+std::ostream &operator<<(std::ostream &out, const Ellipsoid &ellipsoid)
+{
+    out << "Ellipsoid" << '\n';
+    out << "position: " << ellipsoid.position << '\n';
+    out << "size: " << ellipsoid.size << '\n';
+    out << "rotation: " << ellipsoid.rotation << '\n';
+    out << "color: " << ellipsoid.color << '\n';
+    out << "emission: " << ellipsoid.emission << '\n';
+    out << "matetial: " << to_string(ellipsoid.material) << '\n';
+    if (ellipsoid.material == MaterialType::DIELECTRIC)
+    {
+        out << "ior: " << ellipsoid.ior;
+    }
+    return out;
+}
+
 glm::vec3 Ellipsoid::get_normal(glm::vec3 point) const {
     point = rotation.inverse() * (point - position);
     return glm::normalize(rotation * (point / size / size));

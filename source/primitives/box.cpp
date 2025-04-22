@@ -34,6 +34,20 @@ std::ifstream &operator>>(std::ifstream &in, Box &box) {
     return in;
 }
 
+std::ostream &operator<<(std::ostream &out, const Box &box) {
+    out << "Box" << '\n';
+    out << "position: " << box.position << '\n';
+    out << "size: " << box.size << '\n';
+    out << "rotation: " << box.rotation << '\n';
+    out << "color: " << box.color << '\n';
+    out << "emission: " << box.emission << '\n';
+    out << "matetial: " << to_string(box.material) << '\n';
+    if (box.material == MaterialType::DIELECTRIC) {
+        out << "ior: " << box.ior;
+    }
+    return out;
+}
+
 glm::vec3 Box::get_normal(glm::vec3 point) const {
     return glm::normalize(rotation * get_unconverted_normal(point));
 }
