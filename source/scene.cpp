@@ -173,15 +173,13 @@ void Scene::readTxt(std::string txt_path)
             Box box;
             in >> box;
             primitives.emplace_back(box);
+        } else if (command == "PLANE") {
+            Plane plane;
+            in >> plane;
+            primitives.emplace_back(plane);
         } else {
             Primitive primitive;
-            if (command == "PLANE")
-            {
-                primitive.type = PLANE;
-                in >> primitive.geom;
-                primitive.geom = glm::normalize(primitive.geom);
-            }
-            else if (command == "ELLIPSOID")
+            if (command == "ELLIPSOID")
             {
                 primitive.type = ELLIPSOID;
                 in >> primitive.geom;

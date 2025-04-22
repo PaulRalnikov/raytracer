@@ -20,9 +20,9 @@ glm::vec3 PrimitiveDistribution::sample(glm::vec3 point, glm::vec3 normal, pcg32
     do {
         switch (m_primitive.type)
         {
-        case PLANE:
-            throw std::runtime_error("Can not create sample of distribution on plane");
-            break;
+        // case PLANE:
+        //     throw std::runtime_error("Can not create sample of distribution on plane");
+        //     break;
         // case BOX: {
         //     glm::vec3 weights = pairwice_product(m_primitive.geom);
 

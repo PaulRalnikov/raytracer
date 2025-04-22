@@ -9,7 +9,6 @@
 
 enum PrimitiveType
 {
-    PLANE,
     ELLIPSOID,
 };
 

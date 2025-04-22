@@ -21,17 +21,25 @@ glm::vec3 get_emission(const PPrimitive &primitive) {
 }
 
 glm::vec3 get_normal(const PPrimitive &primitive, glm::vec3 point) {
-    auto caller = [&point](const auto& prim) {
-        return prim.get_normal(point);
+    struct Visitor{
+        glm::vec3 operator()(const Plane& plane) {return plane.get_normal(); }
+        glm::vec3 operator()(const Box& prim) { return prim.get_normal(point); }
+        glm::vec3 operator()(const Primitive& prim) { return prim.get_normal(point); }
+
+        glm::vec3 point;
     };
-    return std::visit(caller, primitive);
+    return std::visit(Visitor{point}, primitive);
 }
 
 glm::vec3 get_unconverted_normal(const PPrimitive &primitive, glm::vec3 point) {
-    auto caller = [&point](const auto& prim) {
-        return prim.get_unconverted_normal(point);
+    struct Visitor {
+        glm::vec3 operator()(const Plane &plane) { return plane.get_unconverted_normal(); }
+        glm::vec3 operator()(const Box &prim) { return prim.get_unconverted_normal(point); }
+        glm::vec3 operator()(const Primitive &prim) { return prim.get_unconverted_normal(point); }
+
+        glm::vec3 point;
     };
-    return std::visit(caller, primitive);
+    return std::visit(Visitor{point}, primitive);
 }
 std::optional<float> iintersect(const Ray &ray, const PPrimitive &primitive) {
     auto caller = [&ray](const auto& prim) {

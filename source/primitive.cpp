@@ -40,9 +40,6 @@ glm::vec3 Primitive::get_normal(glm::vec3 point) const {
     point = rotation.inverse() * point;
     glm::vec3 normal;
     switch (type) {
-        case (PLANE):
-            normal = geom;
-            break;
         case (ELLIPSOID):
             normal = glm::normalize(point / geom / geom);
             break;
@@ -57,9 +54,6 @@ glm::vec3 Primitive::get_unconverted_normal(glm::vec3 point) const
     glm::vec3 normal;
     switch (type)
     {
-    case (PLANE):
-        normal = geom;
-        break;
     case (ELLIPSOID):
         normal = glm::normalize(point / geom);
         break;
@@ -71,8 +65,6 @@ std::string to_string(PrimitiveType type)
 {
     switch (type)
     {
-    case PLANE:
-        return "PLANE";
     case ELLIPSOID:
         return "ELLIPSOID";
     default:

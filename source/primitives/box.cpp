@@ -3,6 +3,7 @@
 
 std::ifstream &operator>>(std::ifstream &in, Box &box) {
     in >> box.size;
+
     std::string command;
     while (in >> command) {
         if (command == "POSITION"){

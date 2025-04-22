@@ -2,9 +2,10 @@
 #include <variant>
 
 #include "box.hpp"
+#include "plane.hpp"
 #include "primitive.hpp"
 
-using PPrimitive = std::variant<Box, Primitive>;
+using PPrimitive = std::variant<Box, Plane, Primitive>;
 
 MaterialType get_material_type(const PPrimitive& primitive);
 float get_ior(const PPrimitive& primitive);

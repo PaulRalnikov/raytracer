@@ -31,13 +31,6 @@ std::optional<float> intersect (Ray ray, Primitive primitive) {
 
     switch (primitive.type)
     {
-        case PLANE: {
-            glm::vec3 real_normal = glm::normalize(primitive.geom);
-            float result = -glm::dot(ray.position, real_normal) / glm::dot(ray.direction, real_normal);
-            if (result < 0)
-                return {};
-            return result;
-        }
         case ELLIPSOID: {
             glm::vec3 real_radius = primitive.geom;
 
