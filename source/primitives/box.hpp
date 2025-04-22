@@ -14,7 +14,7 @@ struct Box{
     my_quat rotation;
     glm::vec3 color;
     glm::vec3 emission;
-    MaterialType material = DIFFUSE;
+    MaterialType material = MaterialType::DIFFUSE;
     float ior; // only for diellectric materials
 
     glm::vec3 get_normal(glm::vec3 point) const;

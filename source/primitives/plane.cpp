@@ -27,14 +27,14 @@ std::ifstream &operator>>(std::ifstream &in, Plane &plane) {
             in >> plane.color;
         }
         else if (command == "METALLIC") {
-            plane.material = METALLIC;
+            plane.material = MaterialType::METALLIC;
         }
         else if (command == "DIELECTRIC") {
-            plane.material = DIELECTRIC;
+            plane.material = MaterialType::DIELECTRIC;
         }
         else if (command == "IOR") {
             in >> plane.ior;
-            plane.material = DIELECTRIC;
+            plane.material = MaterialType::DIELECTRIC;
         } else {
             break;
         }

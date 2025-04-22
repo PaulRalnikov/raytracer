@@ -19,14 +19,14 @@ std::ifstream &operator>>(std::ifstream &in, Ellipsoid &ellipsoid) {
             in >> ellipsoid.color;
         }
         else if (command == "METALLIC") {
-            ellipsoid.material = METALLIC;
+            ellipsoid.material = MaterialType::METALLIC;
         }
         else if (command == "DIELECTRIC") {
-            ellipsoid.material = DIELECTRIC;
+            ellipsoid.material = MaterialType::DIELECTRIC;
         }
         else if (command == "IOR") {
             in >> ellipsoid.ior;
-            ellipsoid.material = DIELECTRIC;
+            ellipsoid.material = MaterialType::DIELECTRIC;
         } else {
             break;
         }

@@ -70,7 +70,7 @@ glm::vec3 Scene::raytrace(Ray ray, pcg32_random_t &rng, int depth)
 
     switch (get_material_type(primitive))
     {
-    case (DIELECTRIC):
+    case (MaterialType::DIELECTRIC):
     {
         // Snell's law
         float mu_1 = 1;
@@ -106,7 +106,7 @@ glm::vec3 Scene::raytrace(Ray ray, pcg32_random_t &rng, int depth)
         }
         return get_emission(primitive) + refracted_color;
     }
-    case (DIFFUSE):
+    case (MaterialType::DIFFUSE):
     {
         glm::vec3 w = mis_distribution.sample(point, normal, rng);
         float normal_w_cos = glm::dot(w, normal);
@@ -118,7 +118,7 @@ glm::vec3 Scene::raytrace(Ray ray, pcg32_random_t &rng, int depth)
         glm::vec3 L_in = raytrace(random_ray, rng, depth + 1);
         return get_emission(primitive) + get_color(primitive) / glm::pi<float>() * L_in * normal_w_cos / pdf;
     }
-    case (METALLIC):
+    case (MaterialType::METALLIC):
         return get_emission(primitive) + raytrace(reflected_ray, rng, depth + 1) * get_color(primitive);
     }
 }

@@ -19,14 +19,14 @@ std::ifstream &operator>>(std::ifstream &in, Box &box) {
             in >> box.color;
         }
         else if (command == "METALLIC") {
-            box.material = METALLIC;
+            box.material = MaterialType::METALLIC;
         }
         else if (command == "DIELECTRIC") {
-            box.material = DIELECTRIC;
+            box.material = MaterialType::DIELECTRIC;
         }
         else if (command == "IOR") {
             in >> box.ior;
-            box.material = DIELECTRIC;
+            box.material = MaterialType::DIELECTRIC;
         } else {
             break;
         }
