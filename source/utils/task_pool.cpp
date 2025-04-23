@@ -1,8 +1,6 @@
 #include "task_pool.hpp"
 #include "random.hpp"
 
-static const int RND_KEY = 31;
-
 RaytrasyngTask::RaytrasyngTask(int x, int y):
     x(x), y(y)
 {
@@ -12,7 +10,6 @@ RaytrasyngTask::RaytrasyngTask(int x, int y):
 TaskPool::TaskPool(std::vector<RaytrasyngTask> &&a_tasks, Scene &a_scene) :
                     m_scene(a_scene),
                     m_mutex(),
-                    m_rnd(RND_KEY),
                     m_tasks(std::move(a_tasks)),
                     running(true),
                     m_threads(std::thread::hardware_concurrency())
@@ -33,7 +30,7 @@ void TaskPool::thread_loop() {
                 break;
             }
             // std::cout << "task count: " << m_tasks.size() << std::endl;
-            size_t i = m_rnd() % m_tasks.size();
+            size_t i = random_int(0, m_tasks.size() - 1, rng);
             task = std::move(m_tasks[i]);
             std::swap(m_tasks[i], m_tasks.back());
             m_tasks.pop_back();

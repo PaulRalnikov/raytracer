@@ -2,7 +2,6 @@
 #include <vector>
 #include <future>
 #include <mutex>
-#include <random>
 
 #include "scene.hpp"
 #include "random.hpp"
@@ -28,7 +27,6 @@ private:
     Scene &m_scene;
 
     std::mutex m_mutex; //for m_tasks and m_rnd
-    std::mt19937 m_rnd;
     std::vector<RaytrasyngTask> m_tasks;
     std::atomic<bool> running;
     std::vector<std::thread> m_threads;

@@ -117,9 +117,13 @@ glm::vec3 Scene::raytrace(Ray ray, pcg32_random_t &rng, int depth)
             return get_emission(primitive);
         }
         float pdf = mis_distribution.pdf(point, normal, w);
+        if (pdf == 0.f) {
+            return get_emission(primitive);
+        }
         Ray random_ray = Ray(point + w * SHIFT, w);
         glm::vec3 L_in = raytrace(random_ray, rng, depth + 1);
-        return get_emission(primitive) + get_color(primitive) / glm::pi<float>() * L_in * normal_w_cos / pdf;
+        glm::vec3 result = get_emission(primitive) + get_color(primitive) / glm::pi<float>() * L_in * normal_w_cos / pdf;
+        return result;
     }
     case (MaterialType::METALLIC):
         return get_emission(primitive) + raytrace(reflected_ray, rng, depth + 1) * get_color(primitive);
@@ -204,17 +208,17 @@ void Scene::readTxt(std::string txt_path)
         struct Visitor
         {
             void operator()(const Box& box) {
-                // if (box.emission != glm::vec3(0.0)) {
-                //     distribution->add_distribution(std::make_shared<BoxDistribution>(box));
-                //     fl = true;
-                // }
+                if (box.emission != glm::vec3(0.0)) {
+                    distribution->add_distribution(std::make_shared<BoxDistribution>(box));
+                    fl = true;
+                }
             }
 
             void operator()(const Ellipsoid& ellipsoid) {
-                // if (ellipsoid.emission != glm::vec3(0.0)) {
-                //     distribution->add_distribution(std::make_shared<EllipsoidDistribution>(ellipsoid));
-                //     fl = true;
-                // }
+                if (ellipsoid.emission != glm::vec3(0.0)) {
+                    distribution->add_distribution(std::make_shared<EllipsoidDistribution>(ellipsoid));
+                    fl = true;
+                }
             }
 
             void operator()(const Plane& plane) {}

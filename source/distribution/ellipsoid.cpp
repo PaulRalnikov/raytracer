@@ -9,19 +9,19 @@ EllipsoidDistribution::EllipsoidDistribution(const Ellipsoid& a_ellipsoid):
     m_ellipsoid(a_ellipsoid) {}
 
 glm::vec3 EllipsoidDistribution::sample(glm::vec3 point, glm::vec3 normal, pcg32_random_t &rng) const {
-    glm::vec3 ellipsoid_point;
+    glm::vec3 direction;
+    std::optional<float> intersection;
     do {
-        ellipsoid_point = random_normal_vec3(rng) * (m_ellipsoid.size - glm::vec3(1e-2));
+        glm::vec3 ellipsoid_point = random_normal_vec3(rng) * (m_ellipsoid.size /*- glm::vec3(1e-2)*/);
         ellipsoid_point = m_ellipsoid.rotation * ellipsoid_point + m_ellipsoid.position;
-    } while (glm::length(ellipsoid_point - point) < 1e-8);
 
-    glm::vec3 direction = glm::normalize(ellipsoid_point - point);
-
-    // auto intersection = intersect(Ray(point, direction), m_ellipsoid);
-
-    // if (!intersection.has_value()) {
-    //     std::cout << "Fuck!" << std::endl;
-    // }
+        direction = ellipsoid_point - point;
+        if (glm::length(direction) < 1e-8) {
+            continue;
+        }
+        direction = glm::normalize(direction);
+        intersection = intersect(Ray(point, direction), m_ellipsoid);
+    } while (!intersection.has_value());
 
     return direction;
 }
