@@ -10,7 +10,7 @@
 
 struct Ellipsoid {
     glm::vec3 position = glm::vec3(0.0);
-    glm::vec3 size = glm::vec3(0.0);
+    glm::vec3 radius = glm::vec3(0.0);
     my_quat rotation = my_quat();
     glm::vec3 color = glm::vec3(0.0);
     glm::vec3 emission = glm::vec3(0.0);

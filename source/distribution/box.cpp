@@ -7,14 +7,6 @@
 
 BoxDistribution::BoxDistribution(const Box& a_box) : m_box(a_box) {}
 
-static glm::vec3 surface_point_to_box_coords(glm::vec2 surface_point, int surface_num) {
-    if (surface_num == 0)
-        return glm::vec3(0.0, surface_point);
-    else if (surface_num == 1)
-        return glm::vec3(surface_point.x, 0.0, surface_point.y);
-    return glm::vec3(surface_point, 0.0);
-}
-
 glm::vec3 BoxDistribution::sample(glm::vec3 point, glm::vec3 normal, pcg32_random_t &rng) const
 {
     glm::vec3 box_point;
@@ -44,7 +36,7 @@ static float get_point_pdf(const Box &box, Ray ray, float ray_legnth)
 {
     glm::vec3 intersection_point = ray.position + ray.direction * ray_legnth;
     glm::vec3 normal = box.get_normal(intersection_point);
-    glm::vec3 unconverted_normal = box.get_unconverted_normal(intersection_point);
+    glm::vec3 unconverted_normal = box.get_normal(intersection_point);
 
     glm::vec3 pairwice = pairwice_product(box.size);
     float p_y = 1.f / 4.f / glm::pi<float>() / glm::length(unconverted_normal * pairwice);
@@ -54,6 +46,7 @@ static float get_point_pdf(const Box &box, Ray ray, float ray_legnth)
 
 float BoxDistribution::pdf(glm::vec3 point, glm::vec3 normal, glm::vec3 direction) const
 {
+    static int counter = 0;
     Ray ray(point, direction);
 
     std::optional<float> intersection = intersect(ray, m_box);
@@ -69,6 +62,11 @@ float BoxDistribution::pdf(glm::vec3 point, glm::vec3 normal, glm::vec3 directio
     intersection = intersect(inner_ray, m_box);
     if (intersection.has_value()) {
         result += get_point_pdf(m_box, ray, intersection.value() + t + SHIFT);
+    } else {
+        counter++;
+        if (counter % 50 == 0) {
+            std::cout << "strange count: " << counter << std::endl;
+        }
     }
 
     return result;

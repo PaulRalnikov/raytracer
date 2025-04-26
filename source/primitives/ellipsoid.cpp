@@ -2,7 +2,7 @@
 #include <glm/glm.hpp>
 
 std::ifstream &operator>>(std::ifstream &in, Ellipsoid &ellipsoid) {
-    in >> ellipsoid.size;
+    in >> ellipsoid.radius;
 
     std::string command;
     while (in >> command) {
@@ -38,7 +38,7 @@ std::ostream &operator<<(std::ostream &out, const Ellipsoid &ellipsoid)
 {
     out << "Ellipsoid" << '\n';
     out << "position: " << ellipsoid.position << '\n';
-    out << "size: " << ellipsoid.size << '\n';
+    out << "size: " << ellipsoid.radius << '\n';
     out << "rotation: " << ellipsoid.rotation << '\n';
     out << "color: " << ellipsoid.color << '\n';
     out << "emission: " << ellipsoid.emission << '\n';
@@ -52,12 +52,12 @@ std::ostream &operator<<(std::ostream &out, const Ellipsoid &ellipsoid)
 
 glm::vec3 Ellipsoid::get_normal(glm::vec3 point) const {
     point = rotation.inverse() * (point - position);
-    return glm::normalize(rotation * (point / size / size));
+    return glm::normalize(rotation * (point / radius / radius));
 }
 
 glm::vec3 Ellipsoid::get_unconverted_normal(glm::vec3 point) const {
     point = rotation.inverse() * (point - position);
-    return glm::normalize(point / size);
+    return glm::normalize(rotation * (point / radius));
 }
 
 std::optional<float> intersect(Ray ray, const Ellipsoid &ellipsoid) {
@@ -65,7 +65,7 @@ std::optional<float> intersect(Ray ray, const Ellipsoid &ellipsoid) {
     ray.position = q_hat * (ray.position - ellipsoid.position);
     ray.direction = q_hat * ray.direction;
 
-    glm::vec3 real_radius = ellipsoid.size;
+    glm::vec3 real_radius = ellipsoid.radius;
 
     glm::vec3 pos_radius = ray.position / real_radius;
     glm::vec3 dir_radius = ray.direction / real_radius;

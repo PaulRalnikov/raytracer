@@ -12,7 +12,7 @@ glm::vec3 EllipsoidDistribution::sample(glm::vec3 point, glm::vec3 normal, pcg32
     glm::vec3 direction;
     std::optional<float> intersection;
     do {
-        glm::vec3 ellipsoid_point = random_normal_vec3(rng) * (m_ellipsoid.size /*- glm::vec3(1e-2)*/);
+        glm::vec3 ellipsoid_point = random_normal_vec3(rng) * (m_ellipsoid.radius /*- glm::vec3(1e-2)*/);
         ellipsoid_point = m_ellipsoid.rotation * ellipsoid_point + m_ellipsoid.position;
 
         direction = ellipsoid_point - point;
@@ -34,7 +34,7 @@ static float get_point_pdf(const Ellipsoid &ellipsoid, Ray ray, float ray_legnth
     glm::vec3 normal = ellipsoid.get_normal(intersection_point);
     glm::vec3 unconverted_normal = ellipsoid.get_unconverted_normal(intersection_point);
 
-    glm::vec3 pairwice = pairwice_product(ellipsoid.size);
+    glm::vec3 pairwice = pairwice_product(ellipsoid.radius);
     float p_y = 1.f / 4.f / glm::pi<float>() / glm::length(unconverted_normal * pairwice);
 
     return p_y * ray_legnth * ray_legnth / glm::abs(glm::dot(ray.direction, normal));
