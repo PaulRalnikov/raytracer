@@ -260,7 +260,7 @@ void Scene::setup_distribution() {
     auto dis_distribution = std::make_shared<MixDistribution>();
 
     bool fl = false;
-    for (const Primitive &el : bvh)
+    for (const auto &el : bvh)
     {
         struct Visitor {
             void operator()(const Box& box) {

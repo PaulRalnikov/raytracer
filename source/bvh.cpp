@@ -1,7 +1,12 @@
 #include "bvh.hpp"
 
 BVH::BVH(std::vector<Primitive>&& primitives):
-    m_primitives(std::move(primitives)) {}
+    m_primitives(std::move(primitives))
+{
+    planes_start = std::stable_partition(m_primitives.begin(), m_primitives.end(), [](const Primitive& v) {
+        return !std::holds_alternative<Plane>(v);
+    });
+}
 
 std::vector<Primitive>::const_iterator BVH::begin() const {
     return m_primitives.begin();

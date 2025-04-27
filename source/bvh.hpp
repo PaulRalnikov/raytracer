@@ -4,7 +4,6 @@
 #include "utils/random.hpp"
 
 using Intersection = std::optional<std::pair<float, std::reference_wrapper<const Primitive> > >;
-
 class BVH {
 public:
     BVH(std::vector<Primitive>&& primitives = {});
@@ -17,5 +16,7 @@ public:
         float max_distance = std::numeric_limits<float>::infinity()
     ) const;
 private:
+
     std::vector<Primitive> m_primitives;
+    std::vector<Primitive>::iterator planes_start;
 };
