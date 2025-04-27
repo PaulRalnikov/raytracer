@@ -4,11 +4,6 @@
 
 glm::vec3 Box::get_normal(glm::vec3 point) const
 {
-    return glm::normalize(rotation * get_unconverted_normal(point));
-}
-
-glm::vec3 Box::get_unconverted_normal(glm::vec3 point) const
-{
     point = rotation.inverse() * (point - position);
 
     // hack: abs maximal component of (point / geom) is 1; if set zero to others, we get normal
@@ -29,7 +24,7 @@ glm::vec3 Box::get_unconverted_normal(glm::vec3 point) const
         hack.x = 0;
         hack.y = 0;
     }
-    return glm::normalize(hack);
+    return glm::normalize(rotation * hack);
 }
 
 glm::vec3 Box::operator[](int idx) const {

@@ -131,8 +131,7 @@ glm::vec3 Scene::get_pixel_color(int x, int y, pcg32_random_t& rng) const
     glm::vec3 color(0.0);
     for (size_t i = 0; i < samples; i++)
     {
-        glm::vec2 vec_0_1(0, 1);
-        glm::vec2 coords = glm::vec2(x, y) + random_vec2(vec_0_1, vec_0_1, rng);
+        glm::vec2 coords = glm::vec2(x, y) + random_vec2(glm::vec3(0), glm::vec2(1), rng);
         Ray ray = ray_to_pixel(coords);
         color += raytrace(ray, rng);
     }

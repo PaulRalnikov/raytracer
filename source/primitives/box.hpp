@@ -18,7 +18,6 @@ struct Box{
     float ior = 0.0; // only for diellectric materials
 
     glm::vec3 get_normal(glm::vec3 point) const;
-    glm::vec3 get_unconverted_normal(glm::vec3 point) const;
 
     glm::vec3 operator[](int idx) const;
 };
