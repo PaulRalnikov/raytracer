@@ -77,7 +77,7 @@ std::ostream &operator<<(std::ostream &out, const AABB &aabb) {
     return out;
 }
 
-std::optional<float> iiintersect(const Ray& ray, const AABB& aabb) {
+std::optional<float> iintersect(const Ray& ray, const AABB& aabb) {
     glm::vec3 size = 0.5f * aabb.size();
     glm::vec3 center = aabb.center();
 

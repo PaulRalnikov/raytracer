@@ -25,4 +25,4 @@ struct AABB {
 
 std::ostream& operator<< (std::ostream& out, const AABB& aabb);
 
-std::optional<float> iiintersect(const Ray& ray, const AABB& aabb);
+std::optional<float> iintersect(const Ray& ray, const AABB& aabb);

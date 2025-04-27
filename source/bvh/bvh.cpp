@@ -82,7 +82,7 @@ static Partion get_optimal_partion(ConstPrimitiveIterator begin, ConstPrimitiveI
 }
 
 size_t BVH::build(PrimitiveIterator begin, PrimitiveIterator end) {
-    const static size_t MIN_PARTION_COUNT = 4;
+    const static size_t MIN_PARTION_COUNT = 3;
 
     m_nodes.push_back(Node(-1, -1, begin, end));
     size_t node_idx = m_nodes.size() - 1;
@@ -147,8 +147,9 @@ Intersection BVH::intersect_with_nodes(const Ray& ray, float max_distance) const
 
     std::queue<size_t> queue;
 
-    auto add_to_queue = [this, &ray, &queue](size_t node_idx) {
-        if (iiintersect(ray, m_nodes[node_idx].aabb).has_value()) {
+    auto add_to_queue = [this, &ray, &queue, &result](size_t node_idx) {
+        auto intersection = iintersect(ray, m_nodes[node_idx].aabb);
+        if (intersection.has_value() && (!result.has_value() || intersection.value() < result.value().first)) {
             queue.push(node_idx);
         }
     };
