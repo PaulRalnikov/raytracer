@@ -39,7 +39,7 @@ static float get_point_pdf(const Box &box, Ray ray, float ray_legnth)
     glm::vec3 unconverted_normal = box.get_normal(intersection_point);
 
     glm::vec3 pairwice = pairwice_product(box.size);
-    float p_y = 1.f / 4.f / glm::pi<float>() / glm::length(unconverted_normal * pairwice);
+    float p_y = 1.f / 2.5 / glm::pi<float>() / glm::length(unconverted_normal * pairwice);
 
     return p_y * ray_legnth * ray_legnth / glm::abs(glm::dot(ray.direction, normal));
 }
