@@ -7,6 +7,10 @@ AABB::AABB():
     }
 {}
 
+AABB::AABB(const Primitive &primitive) : AABB() {
+    extend(primitive);
+}
+
 void AABB::extend(glm::vec3 point) {
     borders[0] = glm::min(borders[0], point);
     borders[1] = glm::max(borders[1], point);
@@ -54,3 +58,20 @@ glm::vec3 AABB::operator[](size_t idx) const {
     );
 }
 
+glm::vec3 AABB::size() const {
+    return borders[1] - borders[0];
+}
+
+glm::vec3 AABB::center() const {
+    return borders[0] + 0.5f * (borders[1] - borders[0]);
+}
+
+float AABB::area() const {
+    return sum(pairwice_product(size())) * 2;
+}
+
+std::ostream &operator<<(std::ostream &out, const AABB &aabb) {
+    out << "min: " << aabb.borders[0] << '\n';
+    out << "max: " << aabb.borders[1] << '\n';
+    return out;
+}
