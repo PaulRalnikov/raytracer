@@ -19,6 +19,8 @@ struct Box{
 
     glm::vec3 get_normal(glm::vec3 point) const;
     glm::vec3 get_unconverted_normal(glm::vec3 point) const;
+
+    glm::vec3 operator[](int idx) const;
 };
 
 std::ifstream& operator>> (std::ifstream& in, Box& box);

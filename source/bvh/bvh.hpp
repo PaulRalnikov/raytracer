@@ -2,6 +2,7 @@
 #include <vector>
 #include "primitives/primitive.hpp"
 #include "utils/random.hpp"
+#include "aabb.hpp"
 
 using Intersection = std::optional<std::pair<float, std::reference_wrapper<const Primitive>>>;
 using PrimitiveIterator = std::vector<Primitive>::const_iterator;
@@ -26,6 +27,7 @@ private:
         int right_child;
         PrimitiveIterator begin;
         PrimitiveIterator end;
+        AABB aabb;
 
         Node(int left_child, int right_child, PrimitiveIterator begin, PrimitiveIterator end);
     };

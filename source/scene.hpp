@@ -8,7 +8,7 @@
 #include "primitives/primitive.hpp"
 #include "ray.hpp"
 #include "distribution/mix.hpp"
-#include "bvh.hpp"
+#include "bvh/bvh.hpp"
 
 class Scene {
 public:

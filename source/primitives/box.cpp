@@ -1,6 +1,45 @@
 #include "box.hpp"
 #include <glm/glm.hpp>
 
+glm::vec3 Box::get_normal(glm::vec3 point) const
+{
+    return glm::normalize(rotation * get_unconverted_normal(point));
+}
+
+glm::vec3 Box::get_unconverted_normal(glm::vec3 point) const
+{
+    point = rotation.inverse() * (point - position);
+
+    // hack: abs maximal component of (point / geom) is 1; if set zero to others, we get normal
+    glm::vec3 hack = point / size;
+    glm::vec3 abs_hack = glm::abs(hack);
+    if (abs_hack.x >= std::max(abs_hack.y, abs_hack.z))
+    {
+        hack.y = 0;
+        hack.z = 0;
+    }
+    else if (abs_hack.y >= std::max(abs_hack.x, abs_hack.z))
+    {
+        hack.x = 0;
+        hack.z = 0;
+    }
+    else if (abs_hack.z >= std::max(abs_hack.x, abs_hack.y))
+    {
+        hack.x = 0;
+        hack.y = 0;
+    }
+    return glm::normalize(hack);
+}
+
+glm::vec3 Box::operator[](int idx) const {
+    assert(idx < 8);
+    return position + rotation * glm::vec3(
+        size.x * ((int)((idx >> 2) & 1) * 2 - 1),
+        size.y * ((int)((idx >> 1) & 1) * 2 - 1),
+        size.z * ((int)(idx & 1) * 2 - 1)
+    );
+}
+
 std::ifstream &operator>>(std::ifstream &in, Box &box) {
     in >> box.size;
 
@@ -46,31 +85,6 @@ std::ostream &operator<<(std::ostream &out, const Box &box) {
         out << "ior: " << box.ior;
     }
     return out;
-}
-
-glm::vec3 Box::get_normal(glm::vec3 point) const {
-    return glm::normalize(rotation * get_unconverted_normal(point));
-}
-
-glm::vec3 Box::get_unconverted_normal(glm::vec3 point) const {
-    point = rotation.inverse() * (point - position);
-
-    // hack: abs maximal component of (point / geom) is 1; if set zero to others, we get normal
-    glm::vec3 hack = point / size;
-    glm::vec3 abs_hack = glm::abs(hack);
-    if (abs_hack.x >= std::max(abs_hack.y, abs_hack.z)) {
-        hack.y = 0;
-        hack.z = 0;
-    }
-    else if (abs_hack.y >= std::max(abs_hack.x, abs_hack.z)) {
-        hack.x = 0;
-        hack.z = 0;
-    }
-    else if (abs_hack.z >= std::max(abs_hack.x, abs_hack.y)) {
-        hack.x = 0;
-        hack.y = 0;
-    }
-    return glm::normalize(hack);
 }
 
 static void sort(float& x, float& y) {

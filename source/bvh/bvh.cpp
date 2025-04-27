@@ -83,4 +83,10 @@ Intersection BVH::intersect_with_nodes(const Ray& ray, float max_distance) const
 }
 
 BVH::Node::Node(int left_child, int right_child, PrimitiveIterator begin, PrimitiveIterator end):
-    left_child(left_child), right_child(right_child), begin(begin), end(end) {}
+    left_child(left_child), right_child(right_child), begin(begin), end(end)
+{
+    for (auto it = begin; it < end; it++) {
+        aabb.extend(*it);
+    }
+    std::cout << "min: " << aabb.borders[0] << "; max:" << aabb.borders[1] << std::endl;
+}
