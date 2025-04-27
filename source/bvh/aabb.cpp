@@ -1,4 +1,5 @@
 #include "aabb.hpp"
+#include "utils/sort_float.hpp"
 
 AABB::AABB():
     borders{
@@ -74,4 +75,30 @@ std::ostream &operator<<(std::ostream &out, const AABB &aabb) {
     out << "min: " << aabb.borders[0] << '\n';
     out << "max: " << aabb.borders[1] << '\n';
     return out;
+}
+
+std::optional<float> iiintersect(const Ray& ray, const AABB& aabb) {
+    glm::vec3 size = 0.5f * aabb.size();
+    glm::vec3 center = aabb.center();
+
+    glm::vec3 new_ray_position = ray.position - center;
+
+    glm::vec3 t_vec1 = (size - new_ray_position) / ray.direction;
+    glm::vec3 t_vec2 = (-size - new_ray_position) / ray.direction;
+
+    sort(t_vec1.x, t_vec2.x);
+    sort(t_vec1.y, t_vec2.y);
+    sort(t_vec1.z, t_vec2.z);
+
+    float t1 = vec_max(t_vec1);
+    float t2 = vec_min(t_vec2);
+
+    if (t1 > t2 || (t1 < 0 && t2 < 0)) {
+        return {};
+    }
+    if (t1 > 0 && t2 > 0) {
+        return std::min(t1, t2);
+    }
+
+    return std::max(t1, t2);
 }

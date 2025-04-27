@@ -11,6 +11,7 @@ BVH::BVH(std::vector<Primitive>&& primitives):
     size_t count_planes = planes_end - m_primitives.begin();
 
     m_root = build(planes_end, m_primitives.end());
+    std::cout << "count nodes: " << m_nodes.size() << std::endl;
     m_planes_end = m_primitives.begin() + count_planes;
 }
 
@@ -81,7 +82,7 @@ static Partion get_optimal_partion(ConstPrimitiveIterator begin, ConstPrimitiveI
 }
 
 size_t BVH::build(PrimitiveIterator begin, PrimitiveIterator end) {
-    const static size_t MIN_PARTION_COUNT = 2;
+    const static size_t MIN_PARTION_COUNT = 4;
 
     m_nodes.push_back(Node(-1, -1, begin, end));
     size_t node_idx = m_nodes.size() - 1;
@@ -90,23 +91,42 @@ size_t BVH::build(PrimitiveIterator begin, PrimitiveIterator end) {
         return node_idx;
     }
 
-    std::sort(begin, end, [](Primitive& first, Primitive& second) {
+    auto x_copmarator = [](Primitive& first, Primitive& second) {
         return AABB(first).center().x < AABB(second).center().x;
-    });
+    };
+    std::sort(begin, end, x_copmarator);
+    Partion best_partion = get_optimal_partion(begin, end);
 
-    std::cout << "after sort: " << std::endl;
-    for (auto it = begin; it < end; it++) {
-        std::cout << (*it) << std::endl;
+
+    auto y_copmarator = [](Primitive& first, Primitive& second) {
+        return AABB(first).center().y < AABB(second).center().y;
+    };
+    std::vector primitives_copy(begin, end);
+    std::sort(primitives_copy.begin(), primitives_copy.end(), y_copmarator);
+
+    Partion partion = get_optimal_partion(primitives_copy.begin(), primitives_copy.end());
+    if (partion < best_partion) {
+        best_partion = partion;
+        std::copy(primitives_copy.begin(), primitives_copy.end(), begin);
     }
-    std::cout << "==================================" << std::endl;
 
-    Partion partion = get_optimal_partion(begin, end);
+    auto z_copmarator = [](Primitive &first, Primitive &second) {
+        return AABB(first).center().z < AABB(second).center().z;
+    };
+    std::sort(primitives_copy.begin(), primitives_copy.end(), z_copmarator);
+
+    partion = get_optimal_partion(primitives_copy.begin(), primitives_copy.end());
+    if (partion < best_partion) {
+        best_partion = partion;
+        std::copy(primitives_copy.begin(), primitives_copy.end(), begin);
+    }
+
     if (partion.second == 0) {
         return node_idx;
     }
 
-    m_nodes[node_idx].left_child = build(begin, begin + partion.second);
-    m_nodes[node_idx].right_child = build(begin + partion.second, end);
+    m_nodes[node_idx].left_child = build(begin, begin + best_partion.second);
+    m_nodes[node_idx].right_child = build(begin + best_partion.second, end);
     return node_idx;
 }
 
@@ -126,16 +146,23 @@ Intersection BVH::intersect_with_nodes(const Ray& ray, float max_distance) const
     Intersection result = {};
 
     std::queue<size_t> queue;
+
+    auto add_to_queue = [this, &ray, &queue](size_t node_idx) {
+        if (iiintersect(ray, m_nodes[node_idx].aabb).has_value()) {
+            queue.push(node_idx);
+        }
+    };
+
     queue.push(m_root);
     while (!queue.empty()) {
         const Node& node = m_nodes[queue.front()];
         queue.pop();
 
         if (node.left_child != -1) {
-            queue.push(node.left_child);
-            
+            add_to_queue(node.left_child);
+
             assert(node.right_child != -1);
-            queue.push(node.right_child);
+            add_to_queue(node.right_child);
         } else {
             result = closesed(result, intersect(ray, node, max_distance));
         }
@@ -149,5 +176,5 @@ BVH::Node::Node(int left_child, int right_child, ConstPrimitiveIterator begin, C
     for (auto it = begin; it < end; it++) {
         aabb.extend(*it);
     }
-    std::cout << aabb << '\n';
+    return;
 }

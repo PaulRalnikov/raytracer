@@ -94,7 +94,6 @@ void Scene::readTxt(std::string txt_path)
             Triangle triangle;
             in >> triangle;
             primitives.push_back(triangle);
-            std::cout << triangle << std::endl;
         }
     }
     bvh = BVH(std::move(primitives));
@@ -129,7 +128,6 @@ std::vector<std::vector<glm::vec3> > Scene::get_pixels() {
 
 glm::vec3 Scene::get_pixel_color(int x, int y, pcg32_random_t& rng) const
 {
-    // pcg32_random_t rng;
     glm::vec3 color(0.0);
     for (size_t i = 0; i < samples; i++)
     {

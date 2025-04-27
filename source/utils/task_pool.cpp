@@ -32,7 +32,6 @@ void TaskPool::thread_loop()
             if (m_tasks.empty()) {
                 break;
             }
-            // std::cout << "task count: " << m_tasks.size() << std::endl;
             size_t i = random_int(0, m_tasks.size() - 1, rng);
             task = std::move(m_tasks[i]);
             std::swap(m_tasks[i], m_tasks.back());

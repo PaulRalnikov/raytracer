@@ -6,7 +6,7 @@ struct AABB {
     std::array<glm::vec3, 2> borders;
 
     AABB();
-    AABB(const Primitive &primitive);
+    explicit AABB(const Primitive &primitive);
 
     void extend(glm::vec3 point);
     void extend(const AABB& aabb);
@@ -24,3 +24,5 @@ struct AABB {
 };
 
 std::ostream& operator<< (std::ostream& out, const AABB& aabb);
+
+std::optional<float> iiintersect(const Ray& ray, const AABB& aabb);

@@ -1,4 +1,5 @@
 #include "box.hpp"
+#include "utils/sort_float.hpp"
 #include <glm/glm.hpp>
 
 glm::vec3 Box::get_normal(glm::vec3 point) const
@@ -85,12 +86,6 @@ std::ostream &operator<<(std::ostream &out, const Box &box) {
         out << "ior: " << box.ior;
     }
     return out;
-}
-
-static void sort(float& x, float& y) {
-    if (x > y) {
-        std::swap(x, y);
-    }
 }
 
 std::optional<float> intersect(const Ray &ray, const Box &box) {
