@@ -67,6 +67,7 @@ void Scene::readTxt(std::string txt_path)
 
     m_fov_y = atan(m_height / (float)m_width * tan(m_fov_x / 2)) * 2;
 
+    std::vector<Primitive> primitives;
     while (in >> command)
     {
 
@@ -96,6 +97,7 @@ void Scene::readTxt(std::string txt_path)
             std::cout << triangle << std::endl;
         }
     }
+    bvh = BVH(std::move(primitives));
     setup_distribution();
 }
 
@@ -146,12 +148,11 @@ glm::vec3 Scene::raytrace(Ray ray, pcg32_random_t &rng, int depth) const
     {
         return glm::vec3(0);
     }
-    auto intersection = intersect(ray);
+    auto intersection = bvh.intersect(ray);
     if (!intersection.has_value())
         return m_background_color;
 
-    size_t i = intersection.value().second;
-    const Primitive &primitive = primitives[i];
+    const Primitive &primitive = intersection.value().second;
 
     float t = intersection.value().first; // ray position
     glm::vec3 point = ray.position + ray.direction * t;
@@ -254,43 +255,26 @@ Ray Scene::ray_to_pixel(glm::vec2 pixel) const {
     return Ray(m_camera_position, direction);
 }
 
-std::optional<std::pair<float, size_t>>
-Scene::intersect(Ray ray, float max_distance) const
-{
-    std::optional<std::pair<float, size_t>> intersection = {};
-    for (size_t i = 0; i < primitives.size(); i++)
-    {
-        std::optional<float> prim_intersect = iintersect(ray, primitives[i]);
-        if (!prim_intersect.has_value() || prim_intersect.value() > max_distance) {
-            continue;
-        }
-        if (!intersection.has_value() || intersection.value().first > prim_intersect.value()) {
-            intersection = std::make_pair(prim_intersect.value(), i);
-        }
-    }
-    return intersection;
-}
-
 void Scene::setup_distribution() {
     // direct light sampling
     auto dis_distribution = std::make_shared<MixDistribution>();
 
     bool fl = false;
-    for (const auto &el : primitives)
+    for (const Primitive &el : bvh)
     {
         struct Visitor {
             void operator()(const Box& box) {
-                if (box.emission != glm::vec3(0.0)) {
-                    distribution->add_distribution(std::make_shared<BoxDistribution>(box));
-                    fl = true;
-                }
+                // if (box.emission != glm::vec3(0.0)) {
+                //     distribution->add_distribution(std::make_shared<BoxDistribution>(box));
+                //     fl = true;
+                // }
             }
 
             void operator()(const Ellipsoid& ellipsoid) {
-                if (ellipsoid.emission != glm::vec3(0.0)) {
-                    distribution->add_distribution(std::make_shared<EllipsoidDistribution>(ellipsoid));
-                    fl = true;
-                }
+                // if (ellipsoid.emission != glm::vec3(0.0)) {
+                //     distribution->add_distribution(std::make_shared<EllipsoidDistribution>(ellipsoid));
+                //     fl = true;
+                // }
             }
 
             void operator()(const Plane& plane) {}

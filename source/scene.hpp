@@ -8,6 +8,7 @@
 #include "primitives/primitive.hpp"
 #include "ray.hpp"
 #include "distribution/mix.hpp"
+#include "bvh.hpp"
 
 class Scene {
 public:
@@ -23,12 +24,6 @@ private:
 
     Ray ray_to_pixel(glm::vec2 pixel) const;
 
-    // returns position on the ray and primitive index
-    std::optional<std::pair<float, size_t>> intersect(
-        Ray ray,
-        float max_distance = std::numeric_limits<float>::infinity()
-    ) const;
-
     void setup_distribution();
 
     int m_width, m_height;
@@ -42,7 +37,7 @@ private:
 
     size_t samples; // rays count per pixel
 
-    std::vector<Primitive> primitives;
+    BVH bvh;
     MixDistribution mis_distribution;
 };
 
