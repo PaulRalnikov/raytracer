@@ -262,17 +262,17 @@ void Scene::setup_distribution() {
     {
         struct Visitor {
             void operator()(const Box& box) {
-                // if (box.emission != glm::vec3(0.0)) {
-                //     distribution->add_distribution(std::make_shared<BoxDistribution>(box));
-                //     fl = true;
-                // }
+                if (box.emission != glm::vec3(0.0)) {
+                    distribution->add_distribution(std::make_shared<BoxDistribution>(box));
+                    fl = true;
+                }
             }
 
             void operator()(const Ellipsoid& ellipsoid) {
-                // if (ellipsoid.emission != glm::vec3(0.0)) {
-                //     distribution->add_distribution(std::make_shared<EllipsoidDistribution>(ellipsoid));
-                //     fl = true;
-                // }
+                if (ellipsoid.emission != glm::vec3(0.0)) {
+                    distribution->add_distribution(std::make_shared<EllipsoidDistribution>(ellipsoid));
+                    fl = true;
+                }
             }
 
             void operator()(const Plane& plane) {}

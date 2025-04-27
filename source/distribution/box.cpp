@@ -46,7 +46,6 @@ static float get_point_pdf(const Box &box, Ray ray, float ray_legnth)
 
 float BoxDistribution::pdf(glm::vec3 point, glm::vec3 normal, glm::vec3 direction) const
 {
-    static int counter = 0;
     Ray ray(point, direction);
 
     std::optional<float> intersection = intersect(ray, m_box);
@@ -62,11 +61,6 @@ float BoxDistribution::pdf(glm::vec3 point, glm::vec3 normal, glm::vec3 directio
     intersection = intersect(inner_ray, m_box);
     if (intersection.has_value()) {
         result += get_point_pdf(m_box, ray, intersection.value() + t + SHIFT);
-    } else {
-        counter++;
-        if (counter % 50 == 0) {
-            std::cout << "strange count: " << counter << std::endl;
-        }
     }
 
     return result;
