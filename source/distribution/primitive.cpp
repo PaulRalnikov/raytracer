@@ -9,11 +9,26 @@ std::optional<float> intersect(const Ray &ray, const FinitePrimitive &primitive)
     }, primitive);
 }
 
-PrimitiveDistribution::PrimitiveDistribution(std::vector<FinitePrimitive>&& primitives):
-    m_primitives(std::move(primitives)) {}
+PrimitiveDistribution::PrimitiveDistribution(std::vector<FinitePrimitive>&& primitives)
+{
+    auto visit = [](const FinitePrimitive& primitive) {
+        return std::visit([](const auto& prim){
+            return Primitive(prim);
+        }, primitive);
+    };
+
+    std::vector<Primitive> fucking_primitives;
+    std::transform(
+        primitives.begin(),
+        primitives.end(),
+        std::back_insert_iterator(fucking_primitives),
+        visit
+    );
+    m_bvh = BVH(std::move(fucking_primitives));
+}
 
 glm::vec3 PrimitiveDistribution::sample(glm::vec3 point, glm::vec3 normal, pcg32_random_t &rng) const {
-    size_t i = random_int(0, m_primitives.size() - 1, rng);
+    size_t i = random_int(0, m_bvh.size() - 1, rng);
     struct Visitor{
         glm::vec3 operator()(const Box& box) {
             return ssample(box, point, normal, rng);
@@ -24,40 +39,18 @@ glm::vec3 PrimitiveDistribution::sample(glm::vec3 point, glm::vec3 normal, pcg32
         glm::vec3 operator()(const Triangle &triangle) {
             return ssample(triangle, point, rng);
         };
+        glm::vec3 operator()(const Plane& plane) {
+            throw std::runtime_error("Plane in primitive distribution!");
+        }
 
         const glm::vec3& point;
         const glm::vec3& normal;
         pcg32_random_t& rng;
     };
-    return std::visit(Visitor{point, normal, rng}, m_primitives[i]);
+    return std::visit(Visitor{point, normal, rng}, m_bvh[i]);
 }
 
 float PrimitiveDistribution::pdf(glm::vec3 point, glm::vec3 normal, glm::vec3 direction) const {
-    float sum = 0;
     Ray ray(point, direction);
-    for (const auto& primitive : m_primitives) {
-        std::optional<float> intersection = intersect(ray, primitive);
-
-        if (!intersection.has_value()) {
-            continue;
-        }
-        
-        float ray_length = intersection.value();
-        struct Visitor{
-            float operator()(const Box& box) {
-                return ppdf(box, ray, ray_length);
-            };
-            float operator()(const Ellipsoid& ellipsoid) {
-                return ppdf(ellipsoid, ray, ray_length);
-            };
-            float operator()(const Triangle& triangle) {
-                return ppdf(triangle, ray, ray_length);
-            };
-
-            const Ray& ray;
-            float ray_length;
-        };
-        sum += std::visit(Visitor{ray, ray_length}, primitive);
-    }
-    return sum / m_primitives.size();
+    return m_bvh.pdf(ray);
 }

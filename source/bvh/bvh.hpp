@@ -13,11 +13,17 @@ public:
 
     ConstPrimitiveIterator begin() const;
     ConstPrimitiveIterator end() const;
+    size_t size() const;
+
+    const Primitive& operator[](size_t i) const;
 
     Intersection intersect(
         Ray ray,
         float max_distance = std::numeric_limits<float>::infinity()
     ) const;
+
+    // returns pdf of direction distribution over all primitives on bvh
+    float pdf(const Ray &ray) const;
 private:
     //return index of node in m_nodes
     size_t build(PrimitiveIterator begin, PrimitiveIterator end);

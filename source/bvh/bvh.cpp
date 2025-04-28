@@ -1,5 +1,8 @@
 #include "bvh.hpp"
 #include <queue>
+#include "distribution/box.hpp"
+#include "distribution/ellipsoid.hpp"
+#include "distribution/triangle.hpp"
 
 BVH::BVH(std::vector<Primitive>&& primitives):
     m_primitives(std::move(primitives))
@@ -11,7 +14,6 @@ BVH::BVH(std::vector<Primitive>&& primitives):
     size_t count_planes = planes_end - m_primitives.begin();
 
     m_root = build(planes_end, m_primitives.end());
-    std::cout << "count nodes: " << m_nodes.size() << std::endl;
     m_planes_end = m_primitives.begin() + count_planes;
 }
 
@@ -20,6 +22,14 @@ ConstPrimitiveIterator BVH::begin() const {
 }
 ConstPrimitiveIterator BVH::end() const {
     return m_primitives.end();
+}
+
+size_t BVH::size() const {
+    return end() - begin();
+}
+
+const Primitive& BVH::operator[](size_t i) const {
+    return m_primitives[i];
 }
 
 void static inline update_intersection(
@@ -169,6 +179,62 @@ Intersection BVH::intersect_with_nodes(const Ray& ray, float max_distance) const
         }
     }
     return result;
+}
+
+static inline float get_primitive_pdf(const Ray& ray, const Primitive& primitive) {
+    std::optional<float> intersection = iintersect(ray, primitive);
+
+    if (!intersection.has_value()) {
+        return 0;
+    }
+
+    float ray_length = intersection.value();
+    struct Visitor
+    {
+        float operator()(const Box &box)
+        {
+            return ppdf(box, ray, ray_length);
+        };
+        float operator()(const Ellipsoid &ellipsoid)
+        {
+            return ppdf(ellipsoid, ray, ray_length);
+        };
+        float operator()(const Triangle &triangle)
+        {
+            return ppdf(triangle, ray, ray_length);
+        };
+        float operator()(const Plane& plane) {
+            return 0.f;
+        }
+
+        const Ray &ray;
+        float ray_length;
+    };
+    return std::visit(Visitor{ray, ray_length}, primitive);
+}
+
+float BVH::pdf(const Ray& ray) const {
+    float sum = 0;
+
+    std::queue<size_t> queue;
+
+    queue.push(m_root);
+    while (!queue.empty()) {
+        const Node& node = m_nodes[queue.front()];
+        queue.pop();
+
+        if (node.left_child != -1) {
+            queue.push(node.left_child);
+
+            assert(node.right_child != -1);
+            queue.push(node.right_child);
+        } else {
+            for (auto it = node.begin; it < node.end; it++) {
+                sum +=get_primitive_pdf(ray, *it);
+            }
+        }
+    }
+    return sum / (m_primitives.end() - m_planes_end);
 }
 
 BVH::Node::Node(int left_child, int right_child, ConstPrimitiveIterator begin, ConstPrimitiveIterator end):
