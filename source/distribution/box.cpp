@@ -39,22 +39,14 @@ glm::vec3 ssample(const Box &box, glm::vec3 point, glm::vec3 normal, pcg32_rando
     return glm::normalize(box_point - point);
 }
 
-float ppdf(const Box &box, glm::vec3 point, glm::vec3 normal, glm::vec3 direction) {
-    Ray ray(point, direction);
-
-    std::optional<float> intersection = intersect(ray, box);
-    if (!intersection.has_value()) {
-        return 0.0;
-    }
-
-    float t = intersection.value();
-    float result = get_point_pdf(box, ray, t);
+float ppdf(const Box &box, const Ray& ray, float ray_length) {
+    float result = get_point_pdf(box, ray, ray_length);
 
     static const float SHIFT = 1e-4;
-    Ray inner_ray(point + direction * (t + SHIFT), direction);
-    intersection = intersect(inner_ray, box);
+    Ray inner_ray(ray.position + ray.direction * (ray_length + SHIFT), ray.direction);
+    std::optional<float> intersection = intersect(inner_ray, box);
     if (intersection.has_value()) {
-        result += get_point_pdf(box, ray, intersection.value() + t + SHIFT);
+        result += get_point_pdf(box, ray, intersection.value() + ray_length + SHIFT);
     }
 
     return result;

@@ -43,7 +43,7 @@ float PrimitiveDistribution::pdf(glm::vec3 point, glm::vec3 normal, glm::vec3 di
         float ray_length = intersection.value();
         struct Visitor{
             float operator()(const Box& box) {
-                return ppdf(box, point, normal, direction);
+                return ppdf(box, ray, ray_length);
             };
             float operator()(const Ellipsoid& ellipsoid) {
                 return ppdf(ellipsoid, point, normal, direction);
