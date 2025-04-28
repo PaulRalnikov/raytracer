@@ -9,6 +9,7 @@
 #include "distribution/cos_weighted.hpp"
 #include "distribution/box.hpp"
 #include "distribution/ellipsoid.hpp"
+#include "distribution/primitive.hpp"
 #include "primitives/primitive.hpp"
 #include "scene.hpp"
 #include "ray.hpp"
@@ -254,38 +255,36 @@ Ray Scene::ray_to_pixel(glm::vec2 pixel) const {
 
 void Scene::setup_distribution() {
     // direct light sampling
-    auto dis_distribution = std::make_shared<MixDistribution>();
 
-    bool fl = false;
+    std::vector<FinitePrimitive> finite_primitives;
     for (const auto &el : bvh)
     {
         struct Visitor {
+            std::vector<FinitePrimitive>& finite_primitives;
+
             void operator()(const Box& box) {
                 if (box.emission != glm::vec3(0.0)) {
-                    distribution->add_distribution(std::make_shared<BoxDistribution>(box));
-                    fl = true;
+                    finite_primitives.emplace_back(box);
                 }
             }
 
             void operator()(const Ellipsoid& ellipsoid) {
                 if (ellipsoid.emission != glm::vec3(0.0)) {
-                    distribution->add_distribution(std::make_shared<EllipsoidDistribution>(ellipsoid));
-                    fl = true;
+                    finite_primitives.emplace_back(ellipsoid);
                 }
             }
 
             void operator()(const Plane& plane) {}
             void operator()(const Triangle& triangle) {}
-
-            std::shared_ptr<MixDistribution> distribution;
-            bool& fl;
         };
-        std::visit(Visitor{dis_distribution, fl}, el);
+        std::visit(Visitor{finite_primitives}, el);
     }
 
     mis_distribution.add_distribution(std::make_shared<CosWeighttedDistrubution>());
-    if (fl) {
+    if (!finite_primitives.empty()) {
         std::cout << "Added dis distribution" << std::endl;
-        mis_distribution.add_distribution(dis_distribution);
+        mis_distribution.add_distribution(
+            std::make_shared<PrimitiveDistribution>(std::move(finite_primitives))
+        );
     }
 }
