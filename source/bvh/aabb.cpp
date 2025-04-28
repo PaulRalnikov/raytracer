@@ -37,8 +37,8 @@ void AABB::extend(const Ellipsoid& ellipsoid) {
 }
 
 void AABB::extend(const Triangle& triangle) {
-    for (int i = 0; i < 3; i++) {
-        extend(triangle.position + triangle.rotation * triangle.coords[i]);
+    for (const glm::vec3& p : triangle.coords) {
+        extend(p);
     }
 }
 

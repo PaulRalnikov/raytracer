@@ -10,8 +10,6 @@
 struct Triangle{
     std::array<glm::vec3, 3> coords = {glm::vec3(0.0), glm::vec3(0.0), glm::vec3(0.0)}  ;
 
-    glm::vec3 position;
-    my_quat rotation = my_quat();
     glm::vec3 color = glm::vec3(0.0);
     glm::vec3 emission = glm::vec3(0.0);
     MaterialType material = MaterialType::DIFFUSE;
@@ -23,4 +21,4 @@ struct Triangle{
 std::ifstream& operator>>(std::ifstream &in, Triangle &triangle);
 std::ostream &operator<<(std::ostream &out, const Triangle &triangle);
 
-std::optional<float> intersect(Ray ray, const Triangle &triangle);
+std::optional<float> intersect(const Ray& ray, const Triangle &triangle);

@@ -3,7 +3,7 @@
 glm::vec3 Triangle::get_normal() const {
     glm::vec3 ab = coords[1] - coords[0];
     glm::vec3 ac = coords[2] - coords[0];
-    return glm::normalize(rotation * glm::cross(ab, ac));
+    return glm::normalize(glm::cross(ab, ac));
 }
 
 std::ifstream &operator>>(std::ifstream &in, Triangle &triangle) {
@@ -11,13 +11,16 @@ std::ifstream &operator>>(std::ifstream &in, Triangle &triangle) {
         in >> triangle.coords[i];
     }
 
+    glm::vec3 position;
+    my_quat rotation;
+
     std::string command;
     while (in >> command) {
         if (command == "POSITION") {
-            in >> triangle.position;
+            in >> position;
         }
         if (command == "ROTATION") {
-            in >> triangle.rotation;
+            in >> rotation;
         }
         else if (command == "EMISSION") {
             in >> triangle.emission;
@@ -38,14 +41,15 @@ std::ifstream &operator>>(std::ifstream &in, Triangle &triangle) {
             break;
         }
     }
+    for (auto& p : triangle.coords) {
+        p = position + rotation * p;
+    }
     return in;
 }
 
 std::ostream &operator<<(std::ostream &out, const Triangle &triangle) {
     out << "triangle" << '\n';
-    out << "position: " << triangle.position << '\n';
     out << "coords: " << triangle.coords[0] << ' ' << triangle.coords[1] << ' ' << triangle.coords[2] << '\n';
-    out << "rotation: " << triangle.rotation << '\n';
     out << "color: " << triangle.color << '\n';
     out << "emission: " << triangle.emission << '\n';
     out << "matetial: " << to_string(triangle.material) << '\n';
@@ -55,11 +59,7 @@ std::ostream &operator<<(std::ostream &out, const Triangle &triangle) {
     return out;
 }
 
-std::optional<float> intersect(Ray ray, const Triangle &triangle) {
-    my_quat q_hat = triangle.rotation.inverse();
-
-    ray.position = q_hat * (ray.position - triangle.position);
-    ray.direction = q_hat * ray.direction;
+std::optional<float> intersect(const Ray& ray, const Triangle &triangle) {
 
     //solve LES A + u * (B - A) + v * (C - A) = O + t * D
     // where [A, B, C] = triangle.coords
