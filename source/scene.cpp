@@ -275,7 +275,11 @@ void Scene::setup_distribution() {
             }
 
             void operator()(const Plane& plane) {}
-            void operator()(const Triangle& triangle) {}
+            void operator()(const Triangle& triangle) {
+                if (triangle.emission != glm::vec3(0.0)) {
+                    finite_primitives.emplace_back(triangle);
+                }
+            }
         };
         std::visit(Visitor{finite_primitives}, el);
     }

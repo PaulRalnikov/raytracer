@@ -5,20 +5,6 @@
 #include "utils/random.hpp"
 #include "ray.hpp"
 
-// returns pdf of point distribution
-static float get_point_pdf(const Ellipsoid &ellipsoid, Ray ray, float ray_legnth)
-{
-    glm::vec3 intersection_point = ray.position + ray.direction * ray_legnth;
-
-    glm::vec3 normal = ellipsoid.get_normal(intersection_point);
-    glm::vec3 unconverted_normal = ellipsoid.get_unconverted_normal(intersection_point);
-
-    glm::vec3 pairwice = pairwice_product(ellipsoid.radius);
-    float p_y = 1.f / 4.f / glm::pi<float>() / glm::length(unconverted_normal * pairwice);
-
-    return p_y * ray_legnth * ray_legnth / glm::abs(glm::dot(ray.direction, normal));
-}
-
 glm::vec3 ssample(const Ellipsoid &ellipsoid, glm::vec3 point, glm::vec3 normal, pcg32_random_t &rng) {
     glm::vec3 direction;
     std::optional<float> intersection;
@@ -36,6 +22,19 @@ glm::vec3 ssample(const Ellipsoid &ellipsoid, glm::vec3 point, glm::vec3 normal,
     } while (!intersection.has_value());
 
     return direction;
+}
+
+// returns pdf of point distribution
+static float get_point_pdf(const Ellipsoid &ellipsoid, Ray ray, float ray_legnth) {
+    glm::vec3 intersection_point = ray.position + ray.direction * ray_legnth;
+
+    glm::vec3 normal = ellipsoid.get_normal(intersection_point);
+    glm::vec3 unconverted_normal = ellipsoid.get_unconverted_normal(intersection_point);
+
+    glm::vec3 pairwice = pairwice_product(ellipsoid.radius);
+    float p_y = 1.f / 4.f / glm::pi<float>() / glm::length(unconverted_normal * pairwice);
+
+    return p_y * ray_legnth * ray_legnth / glm::abs(glm::dot(ray.direction, normal));
 }
 
 float ppdf(const Ellipsoid &ellipsoid, glm::vec3 point, glm::vec3 normal, glm::vec3 direction) {

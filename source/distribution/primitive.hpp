@@ -2,7 +2,9 @@
 #include "distribution.hpp"
 #include "primitives/primitive.hpp"
 
-using FinitePrimitive = std::variant<Box, Ellipsoid>;
+using FinitePrimitive = std::variant<Box, Ellipsoid, Triangle>;
+
+std::optional<float> intersect(const Ray& ray, const FinitePrimitive& primitive);
 
 class PrimitiveDistribution : public IDiirectionDistrudution {
 public:
