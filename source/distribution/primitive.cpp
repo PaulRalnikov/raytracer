@@ -37,28 +37,27 @@ float PrimitiveDistribution::pdf(glm::vec3 point, glm::vec3 normal, glm::vec3 di
     Ray ray(point, direction);
     for (const auto& primitive : m_primitives) {
         std::optional<float> intersection = intersect(ray, primitive);
+
         if (!intersection.has_value()) {
             continue;
         }
+        
         float ray_length = intersection.value();
         struct Visitor{
             float operator()(const Box& box) {
                 return ppdf(box, ray, ray_length);
             };
             float operator()(const Ellipsoid& ellipsoid) {
-                return ppdf(ellipsoid, point, normal, direction);
+                return ppdf(ellipsoid, ray, ray_length);
             };
             float operator()(const Triangle& triangle) {
                 return ppdf(triangle, ray, ray_length);
             };
 
-            const glm::vec3& point;
-            const glm::vec3& normal;
-            const glm::vec3& direction;
             const Ray& ray;
             float ray_length;
         };
-        sum += std::visit(Visitor{point, normal, direction, ray, ray_length}, primitive);
+        sum += std::visit(Visitor{ray, ray_length}, primitive);
     }
     return sum / m_primitives.size();
 }

@@ -37,22 +37,16 @@ static float get_point_pdf(const Ellipsoid &ellipsoid, Ray ray, float ray_legnth
     return p_y * ray_legnth * ray_legnth / glm::abs(glm::dot(ray.direction, normal));
 }
 
-float ppdf(const Ellipsoid &ellipsoid, glm::vec3 point, glm::vec3 normal, glm::vec3 direction) {
-    Ray ray(point, direction);
-
-    std::optional<float> intersection = intersect(ray, ellipsoid);
-
-    if (!intersection.has_value()) {
-        return 0.0;
-    }
-    float t = intersection.value();
-    float result = get_point_pdf(ellipsoid, ray, t);
+float ppdf(const Ellipsoid &ellipsoid, const Ray &ray, float ray_length)
+{
+    float result = get_point_pdf(ellipsoid, ray, ray_length);
 
     static const float SHIFT = 1e-4;
-    Ray inner_ray(point + direction * (t + SHIFT), direction);
-    intersection = intersect(inner_ray, ellipsoid);
+    Ray inner_ray(ray.position + ray.direction * (ray_length + SHIFT), ray.direction);
+    std::optional<float> intersection = intersect(inner_ray, ellipsoid);
+
     if (intersection.has_value()) {
-        result += get_point_pdf(ellipsoid, ray, intersection.value() + t + SHIFT);
+        result += get_point_pdf(ellipsoid, ray, intersection.value() + ray_length + SHIFT);
     }
 
     return result;
