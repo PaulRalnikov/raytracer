@@ -71,7 +71,6 @@ void Scene::readTxt(std::string txt_path)
     std::vector<Primitive> primitives;
     while (in >> command)
     {
-
         if (command == "BOX")
         {
             Box box;

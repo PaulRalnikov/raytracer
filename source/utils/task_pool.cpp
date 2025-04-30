@@ -32,7 +32,7 @@ void TaskPool::thread_loop()
             if (m_tasks.empty()) {
                 break;
             }
-            if (m_tasks.size() % 50000 == 0) {
+            if (m_tasks.size() % 5000 == 0) {
                 std::cout << m_tasks.size() << std::endl;
             }
             size_t i = random_int(0, m_tasks.size() - 1, rng);

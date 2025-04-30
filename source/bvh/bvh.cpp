@@ -218,19 +218,26 @@ float BVH::pdf(const Ray& ray) const {
 
     std::queue<size_t> queue;
 
+    auto add_to_queue = [this, &ray, &queue](size_t node_idx) {
+        auto intersection = iintersect(ray, m_nodes[node_idx].aabb);
+        if (intersection.has_value()) {
+            queue.push(node_idx);
+        }
+    };
+
     queue.push(m_root);
     while (!queue.empty()) {
         const Node& node = m_nodes[queue.front()];
         queue.pop();
 
         if (node.left_child != -1) {
-            queue.push(node.left_child);
+            add_to_queue(node.left_child);
 
             assert(node.right_child != -1);
-            queue.push(node.right_child);
+            add_to_queue(node.right_child);
         } else {
             for (auto it = node.begin; it < node.end; it++) {
-                sum +=get_primitive_pdf(ray, *it);
+                sum += get_primitive_pdf(ray, *it);
             }
         }
     }
