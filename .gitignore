@@ -1,2 +1,7 @@
 build/*
 .vscode/*
+
+/samples/worst-reference.png
+/samples/worst-sample.png
+/samples/worst-sample.ppm
+/samples/worst-sample.txt
