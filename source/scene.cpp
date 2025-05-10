@@ -130,39 +130,13 @@ Scene Scene::fromGltf(std::string path, int width, int height, int samples) {
     scene.m_samples = samples;
     scene.m_max_ray_depth = DEFAULT_RAY_DEPTH;
 
-    const auto& nodes = document["nodes"].GetArray();
-    const auto& cameras = document["cameras"].GetArray();
+    const rapidjson::Value& nodes_val = document["nodes"];
+    ConstJsonArray nodes = nodes_val.GetArray();
 
-    for (rapidjson::SizeType i = 0; i < nodes.Size(); i++) {
-        const rapidjson::Value& node = nodes[i];
+    const rapidjson::Value& cameras_val = document["cameras"];
+    ConstJsonArray cameras = cameras_val.GetArray();
 
-        if (!node.HasMember("camera")) {
-            continue;
-        }
-
-        std::cout << "found camera" << std::endl;
-        const auto &translation_array = node["translation"].GetArray();
-        scene.m_camera.position = vec3_from_array(translation_array);
-
-        const auto &rotation_array = node["rotation"].GetArray();
-        my_quat rotation(rotation_array);
-
-        scene.m_camera.right = rotation * glm::vec3(-1.0, 0.0, 0.0);
-        scene.m_camera.up = rotation * glm::vec3(0.0, 1.0, 0.0);
-        scene.m_camera.forward = rotation * glm::vec3(0.0, 0.0, 1.0);
-
-        int camera_index = node["camera"].GetInt();
-        const auto& camera = cameras[camera_index];
-        if (!camera.HasMember("perspective")) {
-            throw std::runtime_error("Found not perspective camera");
-        }
-
-        const auto& camera_params = camera["perspective"];
-        scene.m_camera.fov_y = camera_params["yfov"].GetFloat();
-        scene.m_camera.fov_x = atan(scene.m_width / (float)scene.m_height * tan(scene.m_camera.fov_y / 2)) * 2;
-
-        break;
-    }
+    scene.m_camera = Camera::fromGltfNodes(nodes, cameras, (float) width / height);
 
     std::cout << "width: " << scene.m_width << "; height: " << scene.m_height << "; samples: " << scene.m_samples << std::endl;
     return scene;

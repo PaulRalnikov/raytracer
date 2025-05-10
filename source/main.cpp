@@ -35,11 +35,11 @@ int main(int argc, char *argv[])
 
     bool png_flag = (argc == DEFAULF_ARGC + 1 && std::string(argv[argc - 1]) == "--png");
 
-    // Scene scene = Scene::fromGltf(input_path, width, height, samples);
-    Scene scene;
-    scene.readTxt(input_path);
+    Scene scene = Scene::fromGltf(input_path, width, height, samples);
+    // Scene scene;
+    // scene.readTxt(input_path);
 
-    // return 0;
+    return 0;
 
     auto start = std::chrono::high_resolution_clock::now();
 

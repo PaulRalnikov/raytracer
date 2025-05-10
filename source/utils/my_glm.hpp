@@ -5,12 +5,14 @@
 #include <glm/vec3.hpp>
 #include <rapidjson/document.h>
 
+#include "types.hpp"
+
 struct my_quat {
     glm::vec3 vec;
     float w;
     explicit my_quat(glm::vec3 v = glm::vec3(0), float w = 1);
     explicit my_quat(float x, float y, float z, float w);
-    explicit my_quat(rapidjson::GenericArray<true, rapidjson::Value> array);
+    explicit my_quat(ConstJsonArray array);
 
     my_quat operator*(const my_quat& q) const;
     glm::vec3 operator*(const glm::vec3& v) const;
