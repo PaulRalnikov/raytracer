@@ -37,23 +37,23 @@ void Scene::readTxt(std::string txt_path)
         }
         else if (command == "CAMERA_POSITION")
         {
-            in >> m_camera_position.x >> m_camera_position.y >> m_camera_position.z;
+            in >> m_camera.position;
         }
         else if (command == "CAMERA_RIGHT")
         {
-            in >> m_camera_right.x >> m_camera_right.y >> m_camera_right.z;
+            in >> m_camera.right;
         }
         else if (command == "CAMERA_UP")
         {
-            in >> m_camera_up.x >> m_camera_up.y >> m_camera_up.z;
+            in >> m_camera.up;
         }
         else if (command == "CAMERA_FORWARD")
         {
-            in >> m_camera_forward.x >> m_camera_forward.y >> m_camera_forward.z;
+            in >> m_camera.forward;
         }
         else if (command == "CAMERA_FOV_X")
         {
-            in >> m_fov_x;
+            in >> m_camera.fov_x;
         }
         else if (command == "SAMPLES")
         {
@@ -69,7 +69,7 @@ void Scene::readTxt(std::string txt_path)
         }
     }
 
-    m_fov_y = atan(m_height / (float)m_width * tan(m_fov_x / 2)) * 2;
+    m_camera.fov_y = atan(m_height / (float)m_width * tan(m_camera.fov_x / 2)) * 2;
 
     std::vector<Primitive> primitives;
     while (in >> command)
@@ -104,32 +104,65 @@ void Scene::readTxt(std::string txt_path)
 }
 
 Scene Scene::fromGltf(std::string path, int width, int height, int samples) {
+    const static int DEFAULT_RAY_DEPTH = 6;
 
     std::ifstream in(path);
-    if (!in.is_open())
-    {
+    if (!in.is_open()) {
         throw std::runtime_error("File '" + path + "' does not exists");
     }
     rapidjson::IStreamWrapper isw(in);
 
-    // Создаем документ для хранения JSON-данных
     rapidjson::Document document;
 
-    // Парсим JSON-данные из потока
     if (document.ParseStream(isw).HasParseError())
     {
         throw std::runtime_error(
             "radidjson error: '" +
             std::string(rapidjson::GetParseError_En(document.GetParseError())) +
-            "'");
+            "'"
+        );
     }
 
-    std::cout << "Successfully parsed!" << std::endl;
     Scene scene;
 
     scene.m_width = width;
     scene.m_height = height;
     scene.m_samples = samples;
+    scene.m_max_ray_depth = DEFAULT_RAY_DEPTH;
+
+    const auto& nodes = document["nodes"].GetArray();
+    const auto& cameras = document["cameras"].GetArray();
+
+    for (rapidjson::SizeType i = 0; i < nodes.Size(); i++) {
+        const rapidjson::Value& node = nodes[i];
+
+        if (!node.HasMember("camera")) {
+            continue;
+        }
+
+        std::cout << "found camera" << std::endl;
+        const auto &translation_array = node["translation"].GetArray();
+        scene.m_camera.position = vec3_from_array(translation_array);
+
+        const auto &rotation_array = node["rotation"].GetArray();
+        my_quat rotation(rotation_array);
+
+        scene.m_camera.right = rotation * glm::vec3(-1.0, 0.0, 0.0);
+        scene.m_camera.up = rotation * glm::vec3(0.0, 1.0, 0.0);
+        scene.m_camera.forward = rotation * glm::vec3(0.0, 0.0, 1.0);
+
+        int camera_index = node["camera"].GetInt();
+        const auto& camera = cameras[camera_index];
+        if (!camera.HasMember("perspective")) {
+            throw std::runtime_error("Found not perspective camera");
+        }
+
+        const auto& camera_params = camera["perspective"];
+        scene.m_camera.fov_y = camera_params["yfov"].GetFloat();
+        scene.m_camera.fov_x = atan(scene.m_width / (float)scene.m_height * tan(scene.m_camera.fov_y / 2)) * 2;
+
+        break;
+    }
 
     std::cout << "width: " << scene.m_width << "; height: " << scene.m_height << "; samples: " << scene.m_samples << std::endl;
     return scene;
@@ -271,7 +304,7 @@ glm::vec3 Scene::raytrace(Ray ray, pcg32_random_t &rng, int depth) const
 }
 
 Ray Scene::ray_to_pixel(glm::vec2 pixel) const {
-    float tan_fov_x_2 = tan(m_fov_x / 2);
+    float tan_fov_x_2 = tan(m_camera.fov_x / 2);
     float tan_fov_y_2 = tan_fov_x_2 * m_height / (float)m_width;
 
     glm::vec3 position(
@@ -281,11 +314,11 @@ Ray Scene::ray_to_pixel(glm::vec2 pixel) const {
     );
 
     glm::vec3 direction = glm::normalize(
-        position.x * m_camera_right +
-        position.y * m_camera_up +
-        position.z * m_camera_forward
+        position.x * m_camera.right +
+        position.y * m_camera.up +
+        position.z * m_camera.forward
     );
-    return Ray(m_camera_position, direction);
+    return Ray(m_camera.position, direction);
 }
 
 void Scene::setup_distribution() {

@@ -11,9 +11,23 @@ my_quat::my_quat(float x, float y, float z, float w):
 my_quat::my_quat(glm::vec3 v, float w) :
     vec(v), w(w) {}
 
+
+my_quat::my_quat(rapidjson::GenericArray<true, rapidjson::Value> array) {
+    if (array.Size() != 4) {
+        throw std::runtime_error("Error: array length must be equal to 4");
+    }
+    vec = glm::vec3(
+        array[0].GetFloat(),
+        array[1].GetFloat(),
+        array[2].GetFloat()
+    );
+    w = array[3].GetFloat();
+}
+
 my_quat my_quat::operator*(const my_quat& q) const {
     return my_quat(w * q.vec + q.w * vec + glm::cross(vec, q.vec), w * q.w - glm::dot(vec, q.vec));
 }
+
 
 my_quat my_quat::inverse() const {
     return my_quat(-vec, w);
@@ -62,4 +76,15 @@ glm::vec3 pairwice_product(glm::vec3 v) {
 
 float sum(glm::vec3 v) {
     return v.x + v.y + v.z;
+}
+
+glm::vec3 vec3_from_array(rapidjson::GenericArray<true, rapidjson::Value> array) {
+    if (array.Size() != 3) {
+        throw std::runtime_error("Error: array length must be equal to 3");
+    }
+    return glm::vec3(
+        array[0].GetFloat(),
+        array[1].GetFloat(),
+        array[2].GetFloat()
+    );
 }

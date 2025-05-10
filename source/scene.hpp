@@ -9,6 +9,7 @@
 #include "ray.hpp"
 #include "distribution/mix.hpp"
 #include "bvh/bvh.hpp"
+#include "camera.hpp"
 
 class Scene {
 public:
@@ -30,13 +31,9 @@ private:
 
     int m_width, m_height;
     glm::vec3 m_background_color;
-    glm::vec3 m_camera_position;
-    glm::vec3 m_camera_right;
-    glm::vec3 m_camera_up;
-    glm::vec3 m_camera_forward;
-    float m_fov_x, m_fov_y;
-    int m_max_ray_depth;
 
+    int m_max_ray_depth;
+    Camera m_camera;
     size_t m_samples; // rays count per pixel
 
     BVH m_bvh;
