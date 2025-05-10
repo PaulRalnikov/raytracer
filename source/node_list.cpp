@@ -54,9 +54,17 @@ static glm::mat4x4 get_self_transform(const rapidjson::Value& node) {
     return traslation_mat * rotation_mat * scale_mat;
 }
 
+glm::mat4x4 NodeList::get_transform(size_t index) const {
+    glm::mat4x4 self_transform = get_self_transform(m_nodes[index]);
+    if (m_parent[index] == -1) {
+        return self_transform;
+    }
+    return get_transform(m_parent[index]) * self_transform;
+}
+
 std::pair<glm::mat4x4, const rapidjson::Value &> NodeList::operator[](size_t index) const
 {
-    return {get_self_transform(m_nodes[index]), m_nodes[index]};
+    return {get_transform(index), m_nodes[index]};
 }
 
 size_t NodeList::size() const {

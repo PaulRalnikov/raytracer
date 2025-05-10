@@ -13,6 +13,8 @@ public:
 
     size_t size() const;
 private:
+    glm::mat4x4 get_transform(size_t index) const;
+
     ConstJsonArray m_nodes;
     std::vector<int> m_parent;
 };
