@@ -5,6 +5,9 @@
 
 #include <glm/glm.hpp>
 #include <glm/gtc/constants.hpp>
+#include <rapidjson/document.h>
+#include <rapidjson/istreamwrapper.h>
+#include <rapidjson/error/en.h>
 
 #include "distribution/cos_weighted.hpp"
 #include "distribution/box.hpp"
@@ -54,11 +57,11 @@ void Scene::readTxt(std::string txt_path)
         }
         else if (command == "SAMPLES")
         {
-            in >> samples;
+            in >> m_samples;
         }
         else if (command == "RAY_DEPTH")
         {
-            in >> max_ray_depth;
+            in >> m_max_ray_depth;
         }
         else if (command == "NEW_PRIMITIVE")
         {
@@ -96,9 +99,42 @@ void Scene::readTxt(std::string txt_path)
             primitives.push_back(triangle);
         }
     }
-    bvh = BVH(std::move(primitives));
+    m_bvh = BVH(std::move(primitives));
     setup_distribution();
 }
+
+Scene Scene::fromGltf(std::string path, int width, int height, int samples) {
+
+    std::ifstream in(path);
+    if (!in.is_open())
+    {
+        throw std::runtime_error("File '" + path + "' does not exists");
+    }
+    rapidjson::IStreamWrapper isw(in);
+
+    // Создаем документ для хранения JSON-данных
+    rapidjson::Document document;
+
+    // Парсим JSON-данные из потока
+    if (document.ParseStream(isw).HasParseError())
+    {
+        throw std::runtime_error(
+            "radidjson error: '" +
+            std::string(rapidjson::GetParseError_En(document.GetParseError())) +
+            "'");
+    }
+
+    std::cout << "Successfully parsed!" << std::endl;
+    Scene scene;
+
+    scene.m_width = width;
+    scene.m_height = height;
+    scene.m_samples = samples;
+
+    std::cout << "width: " << scene.m_width << "; height: " << scene.m_height << "; samples: " << scene.m_samples << std::endl;
+    return scene;
+}
+
 
 std::vector<std::vector<glm::vec3> > Scene::get_pixels() {
     size_t tasks_count = m_width * m_height;
@@ -129,23 +165,23 @@ std::vector<std::vector<glm::vec3> > Scene::get_pixels() {
 glm::vec3 Scene::get_pixel_color(int x, int y, pcg32_random_t& rng) const
 {
     glm::vec3 color(0.0);
-    for (size_t i = 0; i < samples; i++)
+    for (size_t i = 0; i < m_samples; i++)
     {
         glm::vec2 coords = glm::vec2(x, y) + random_vec2(glm::vec3(0), glm::vec2(1), rng);
         Ray ray = ray_to_pixel(coords);
         color += raytrace(ray, rng);
     }
-    color /= samples;
+    color /= m_samples;
     return color;
 }
 
 glm::vec3 Scene::raytrace(Ray ray, pcg32_random_t &rng, int depth) const
 {
-    if (depth >= max_ray_depth)
+    if (depth >= m_max_ray_depth)
     {
         return glm::vec3(0);
     }
-    auto intersection = bvh.intersect(ray);
+    auto intersection = m_bvh.intersect(ray);
     if (!intersection.has_value())
         return m_background_color;
 
@@ -212,13 +248,13 @@ glm::vec3 Scene::raytrace(Ray ray, pcg32_random_t &rng, int depth) const
     }
     case (MaterialType::DIFFUSE):
     {
-        glm::vec3 w = mis_distribution.sample(point, normal, rng);
+        glm::vec3 w = m_mis_distribution.sample(point, normal, rng);
         float normal_w_cos = glm::dot(w, normal);
         if (normal_w_cos <= 0 || get_color(primitive) == glm::vec3(0.0))
         {
             return get_emission(primitive);
         }
-        float pdf = mis_distribution.pdf(point, normal, w);
+        float pdf = m_mis_distribution.pdf(point, normal, w);
         if (pdf == 0.f)
         {
             return get_emission(primitive);
@@ -256,7 +292,7 @@ void Scene::setup_distribution() {
     // direct light sampling
 
     std::vector<FinitePrimitive> finite_primitives;
-    for (const auto &el : bvh)
+    for (const auto &el : m_bvh)
     {
         struct Visitor {
             std::vector<FinitePrimitive>& finite_primitives;
@@ -283,10 +319,10 @@ void Scene::setup_distribution() {
         std::visit(Visitor{finite_primitives}, el);
     }
 
-    mis_distribution.add_distribution(std::make_shared<CosWeighttedDistrubution>());
+    m_mis_distribution.add_distribution(std::make_shared<CosWeighttedDistrubution>());
     if (!finite_primitives.empty()) {
         std::cout << "Added dis distribution" << std::endl;
-        mis_distribution.add_distribution(
+        m_mis_distribution.add_distribution(
             std::make_shared<PrimitiveDistribution>(std::move(finite_primitives))
         );
     }

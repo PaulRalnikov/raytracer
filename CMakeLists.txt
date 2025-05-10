@@ -11,6 +11,7 @@ include_directories(
     ${CMAKE_SOURCE_DIR}/source/
     ${CMAKE_SOURCE_DIR}/external/glm
     ${CMAKE_SOURCE_DIR}/external/stb
+    ${CMAKE_SOURCE_DIR}/external/rapidjson/include
 )
 
 set(TARGET_NAME "${PROJECT_NAME}")

@@ -14,6 +14,8 @@ class Scene {
 public:
     void readTxt(std::string txt_path);
 
+    static Scene fromGltf(std::string path, int width, int height, int samples);
+
     std::vector<std::vector<glm::vec3> > get_pixels();
 
     glm::vec3 get_pixel_color(int x, int y, pcg32_random_t& rng) const;
@@ -33,11 +35,11 @@ private:
     glm::vec3 m_camera_up;
     glm::vec3 m_camera_forward;
     float m_fov_x, m_fov_y;
-    int max_ray_depth;
+    int m_max_ray_depth;
 
-    size_t samples; // rays count per pixel
+    size_t m_samples; // rays count per pixel
 
-    BVH bvh;
-    MixDistribution mis_distribution;
+    BVH m_bvh;
+    MixDistribution m_mis_distribution;
 };
 
