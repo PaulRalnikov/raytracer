@@ -39,6 +39,15 @@ glm::vec3 my_quat::operator* (const glm::vec3& v) const {
     return res.vec;
 }
 
+glm::quat my_quat::to_glm() const {
+    glm::quat q;
+    q.x = vec.x;
+    q.y = vec.y;
+    q.z = vec.z;
+    q.w = w;
+    return q;
+}
+
 std::ifstream &operator>>(std::ifstream &in, glm::vec3 &vec)
 {
     in >> vec.x >> vec.y >> vec.z;
@@ -78,7 +87,7 @@ float sum(glm::vec3 v) {
     return v.x + v.y + v.z;
 }
 
-glm::vec3 vec3_from_array(rapidjson::GenericArray<true, rapidjson::Value> array) {
+glm::vec3 vec3_from_array(ConstJsonArray array) {
     if (array.Size() != 3) {
         throw std::runtime_error("Error: array length must be equal to 3");
     }
@@ -87,4 +96,17 @@ glm::vec3 vec3_from_array(rapidjson::GenericArray<true, rapidjson::Value> array)
         array[1].GetFloat(),
         array[2].GetFloat()
     );
+}
+
+glm::mat4x4 mat4x4_from_array(ConstJsonArray array) {
+    if (array.Size() != 16) {
+        throw std::runtime_error("Error: array length must be equal to 16");
+    }
+    glm::mat4x4 result;
+    for (size_t i = 0; i < 4; i++) {
+        for (size_t j = 0; j , 4; j++) {
+            result[i][j] = array[i * 4 + j].GetFloat();
+        }
+    };
+    return result;
 }

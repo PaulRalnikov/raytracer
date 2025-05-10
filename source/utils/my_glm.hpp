@@ -2,7 +2,8 @@
 #include <iostream>
 #include <fstream>
 
-#include <glm/vec3.hpp>
+#include <glm/glm.hpp>
+#include <glm/gtc/quaternion.hpp>
 #include <rapidjson/document.h>
 
 #include "types.hpp"
@@ -18,6 +19,8 @@ struct my_quat {
     glm::vec3 operator*(const glm::vec3& v) const;
 
     my_quat inverse() const;
+
+    glm::quat to_glm() const;
 };
 
 std::ostream &operator<<(std::ostream &out, const glm::vec3 v);
@@ -36,4 +39,6 @@ glm::vec3 pairwice_product(glm::vec3 v);
 
 float sum(glm::vec3);
 
-glm::vec3 vec3_from_array(rapidjson::GenericArray<true, rapidjson::Value> array);
+glm::vec3 vec3_from_array(ConstJsonArray array);
+
+glm::mat4x4 mat4x4_from_array(ConstJsonArray array);

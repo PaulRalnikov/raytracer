@@ -1,26 +1,23 @@
 #include "camera.hpp"
+
+#include <glm/gtc/matrix_transform.hpp>
+#include <glm/gtx/vec_swizzle.hpp>
+#include <glm/glm.hpp>
+
+
 #include "utils/my_glm.hpp"
 
-Camera Camera::fromGltfNodes(ConstJsonArray nodes, ConstJsonArray cameras, float aspect_ratio) {
+Camera Camera::fromGltfNodes(const NodeList& node_list, ConstJsonArray cameras, float aspect_ratio) {
     Camera result;
-    for (rapidjson::SizeType i = 0; i < nodes.Size(); i++)
+    for (rapidjson::SizeType i = 0; i < node_list.size(); i++)
     {
-        const rapidjson::Value &node = nodes[i];
+        auto[matrix, node] = node_list[i];
 
-        if (!node.HasMember("camera"))
-        {
-            continue;
-        }
+        result.right = (matrix * glm::vec4(-1.0, 0.0, 0.0, 0.0)).xyz();
+        result.up = (matrix * glm::vec4(0.0, 1.0, 0.0, 0.0)).xyz();
+        result.forward = (matrix * glm::vec4(0.0, 0.0, 1.0, 0.0)).xyz();
 
-        const auto &translation_array = node["translation"].GetArray();
-        result.position = vec3_from_array(translation_array);
-
-        ConstJsonArray rotation_array = node["rotation"].GetArray();
-        my_quat rotation(rotation_array);
-
-        result.right = rotation * glm::vec3(-1.0, 0.0, 0.0);
-        result.up = rotation * glm::vec3(0.0, 1.0, 0.0);
-        result.forward = rotation * glm::vec3(0.0, 0.0, 1.0);
+        result.position = (matrix * glm::vec4(glm::vec3(0.f), 1.f)).xyz();
 
         int camera_index = node["camera"].GetInt();
         const auto &camera = cameras[camera_index];

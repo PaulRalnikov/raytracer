@@ -1,6 +1,6 @@
 #pragma once
 #include <glm/glm.hpp>
-
+#include "node_list.hpp"
 #include "types.hpp"
 
 struct Camera {
@@ -10,5 +10,5 @@ struct Camera {
     glm::vec3 forward;
     float fov_x, fov_y;
 
-    static Camera fromGltfNodes(ConstJsonArray nodes, ConstJsonArray cameras, float aspect_ratio);
+    static Camera fromGltfNodes(const NodeList &node_list, ConstJsonArray cameras, float aspect_ratio);
 };

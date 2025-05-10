@@ -103,6 +103,11 @@ void Scene::readTxt(std::string txt_path)
     setup_distribution();
 }
 
+static ConstJsonArray readArray(const rapidjson::Document& document, const char* name) {
+    const rapidjson::Value& value = document[name];
+    return value.GetArray();
+}
+
 Scene Scene::fromGltf(std::string path, int width, int height, int samples) {
     const static int DEFAULT_RAY_DEPTH = 6;
 
@@ -130,18 +135,23 @@ Scene Scene::fromGltf(std::string path, int width, int height, int samples) {
     scene.m_samples = samples;
     scene.m_max_ray_depth = DEFAULT_RAY_DEPTH;
 
-    const rapidjson::Value& nodes_val = document["nodes"];
-    ConstJsonArray nodes = nodes_val.GetArray();
-
-    const rapidjson::Value& cameras_val = document["cameras"];
-    ConstJsonArray cameras = cameras_val.GetArray();
+    ConstJsonArray nodes = readArray(document, "nodes");
+    ConstJsonArray cameras = readArray(document, "cameras");
 
     scene.m_camera = Camera::fromGltfNodes(nodes, cameras, (float) width / height);
 
-    std::cout << "width: " << scene.m_width << "; height: " << scene.m_height << "; samples: " << scene.m_samples << std::endl;
+    std::cout << "camera: " << std::endl;
+    std::cout << scene.m_camera.forward << std::endl;
+    std::cout << scene.m_camera.right << std::endl;
+    std::cout << scene.m_camera.up << std::endl;
+    std::cout << scene.m_camera.fov_x << std::endl;
+    std::cout << scene.m_camera.fov_y << std::endl;
+    std::cout << scene.m_camera.position << std::endl;
+
+    ConstJsonArray meshes = readArray(document, "meshes");
+
     return scene;
 }
-
 
 std::vector<std::vector<glm::vec3> > Scene::get_pixels() {
     size_t tasks_count = m_width * m_height;
