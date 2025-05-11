@@ -2,6 +2,7 @@
 #include <cmath>
 #include <functional>
 #include <cmath>
+#include <filesystem>
 
 #include <glm/glm.hpp>
 #include <glm/gtc/constants.hpp>
@@ -108,6 +109,113 @@ static ConstJsonArray readArray(const rapidjson::Document& document, const char*
     return value.GetArray();
 }
 
+static std::vector<std::vector<char> > readBuffersContents(
+    ConstJsonArray buffers,
+    std::filesystem::path buffers_dir_path)
+{
+    std::vector<std::vector<char> > result(buffers.Size());
+    for (rapidjson::SizeType i = 0; i < buffers.Size(); i++) {
+        size_t byte_length = buffers[i]["byteLength"].GetUint();
+        result[i].resize(byte_length);
+
+        std::string uri_name = buffers[i]["uri"].GetString();
+        std::ifstream in(buffers_dir_path / uri_name, std::ios::binary);
+        in.read(result[i].data(), byte_length);
+    }
+    return result;
+}
+
+static int get_size_in_bytes(int componentType) {
+    if (componentType == 5120 || componentType == 5121) {
+        return 1;
+    }
+    if (componentType == 5122 || componentType == 5123) {
+        return 2;
+    }
+    if (componentType == 5125 || componentType == 5126) {
+        return 4;
+    }
+    throw std::runtime_error("Unexpected data type: " + std::to_string(componentType));
+}
+
+static std::vector<unsigned int> get_real_data(const std::vector<char>& data, size_t data_size_bytes) {
+    if (data_size_bytes == 1) {
+        return std::vector<unsigned int>(data.data(), data.data() + data.size());
+    } else if (data_size_bytes == 2) {
+        unsigned short* begin = (unsigned short*)data.data();
+        return std::vector<unsigned int>(begin, begin + data.size() / data_size_bytes);
+    } else if (data_size_bytes == 3) {
+        unsigned int *begin = (unsigned int *)data.data();
+        return std::vector<unsigned int>(begin, begin + data.size() / data_size_bytes);
+    }
+    throw std::runtime_error("Unexpected data_size_bytes: want size_t from 1 to 3, got " + std::to_string(data_size_bytes));
+}
+
+static size_t get_type_number_of_compoents(std::string type) {
+    if (type == "SCALAR") {
+        return 1;
+    } else if (type == "VEC3") {
+        return 3;
+    }
+    throw std::runtime_error("Unexpected type: " + type);
+}
+
+//data, type and component type
+using AcessorData = std::tuple<std::vector<char>, std::string, int>;
+
+static AcessorData read_acessor_data(
+    ConstJsonArray buffer_views,
+    const std::vector<std::vector<char> >& buffers_contents,
+    const rapidjson::Value& acessor
+) {
+    int buffer_view_index = acessor["bufferView"].GetInt();
+    int component_type = acessor["componentType"].GetInt();
+    int count = acessor["count"].GetInt();
+    int bytes_count = get_size_in_bytes(component_type);
+
+    std::string type = acessor["type"].GetString();
+    size_t components_count = get_type_number_of_compoents(type);
+
+    int byte_offset = 0;
+    if (acessor.HasMember("byteOffset")) {
+        byte_offset = acessor["byteOffset"].GetInt();
+    }
+
+    const rapidjson::Value& buffer_view = buffer_views[buffer_view_index];
+    int buffer_index = buffer_view["buffer"].GetInt();
+
+    int start = byte_offset + buffer_view["byteOffset"].GetInt();
+
+    auto it_start = buffers_contents[buffer_index].begin() + start;
+    auto it_end = it_start + count * bytes_count * components_count;
+
+    return {std::vector<char> (it_start, it_end), type, component_type};
+}
+
+std::vector<unsigned int> get_indexes(AcessorData indexes_data) {
+    auto [data, type, component_type] = indexes_data;
+    if (type != "SCALAR") {
+        throw std::runtime_error("Not scalar type in indexes acessor: " + type);
+    }
+    return get_real_data(data, get_size_in_bytes(component_type));
+}
+
+std::vector<glm::vec3> get_points(AcessorData points_data) {
+    auto [data, type, component_type] = points_data;
+    if (type != "VEC3") {
+        throw std::runtime_error("Not VEC3 type in position acessor: " + type);
+    }
+    if (get_size_in_bytes(component_type) != 4) {
+        throw std::runtime_error("Unexpected component type: want 4-bytes type, got " + component_type);
+    }
+    glm::vec3* begin = (glm::vec3*)data.data();
+    return std::vector<glm::vec3>(begin, begin + data.size() / sizeof(glm::vec3));
+}
+
+static inline glm::vec3 translate(glm::vec3 point, const glm::mat4x4& translate) {
+    return (translate * glm::vec4(point, 1.f)).xyz();
+}
+
 Scene Scene::fromGltf(std::string path, int width, int height, int samples) {
     const static int DEFAULT_RAY_DEPTH = 6;
 
@@ -122,7 +230,7 @@ Scene Scene::fromGltf(std::string path, int width, int height, int samples) {
     if (document.ParseStream(isw).HasParseError())
     {
         throw std::runtime_error(
-            "radidjson error: '" +
+            "rapidjson error: '" +
             std::string(rapidjson::GetParseError_En(document.GetParseError())) +
             "'"
         );
@@ -135,20 +243,66 @@ Scene Scene::fromGltf(std::string path, int width, int height, int samples) {
     scene.m_samples = samples;
     scene.m_max_ray_depth = DEFAULT_RAY_DEPTH;
 
-    ConstJsonArray nodes = readArray(document, "nodes");
+    NodeList node_list(readArray(document, "nodes"));
     ConstJsonArray cameras = readArray(document, "cameras");
 
-    scene.m_camera = Camera::fromGltfNodes(nodes, cameras, (float) width / height);
-
-    std::cout << "camera: " << std::endl;
-    std::cout << scene.m_camera.forward << std::endl;
-    std::cout << scene.m_camera.right << std::endl;
-    std::cout << scene.m_camera.up << std::endl;
-    std::cout << scene.m_camera.fov_x << std::endl;
-    std::cout << scene.m_camera.fov_y << std::endl;
-    std::cout << scene.m_camera.position << std::endl;
+    scene.m_camera = Camera::fromGltfNodes(node_list, cameras, (float) width / height);
 
     ConstJsonArray meshes = readArray(document, "meshes");
+    ConstJsonArray acessors = readArray(document, "accessors");
+    ConstJsonArray buffer_views = readArray(document, "bufferViews");
+    ConstJsonArray buffers = readArray(document, "buffers");
+
+    std::vector<std::vector<char> > buffers_contents = readBuffersContents(
+        buffers, std::filesystem::path(path).parent_path()
+    );
+
+    std::vector<Primitive> primitives;
+    for (size_t node_index = 0; node_index < node_list.size(); node_index++) {
+        auto [node, matrix] = node_list[node_index];
+        if (!node.HasMember("mesh")) {
+            continue;
+        }
+
+        int mesh_index = node["mesh"].GetInt();
+        const rapidjson::Value& mesh = meshes[mesh_index];
+        ConstJsonArray mesh_primitives = mesh["primitives"].GetArray();
+
+        std::cout << "node " << node["name"].GetString() << " size " << mesh_primitives.Size() << std::endl;
+
+        for (rapidjson::SizeType prim_index = 0; prim_index < mesh_primitives.Size(); prim_index++) {
+            const rapidjson::Value& primitive = mesh_primitives[prim_index];
+            int indexes_acessor_index = primitive["indices"].GetInt();
+
+            const rapidjson::Value &attributes = primitive["attributes"];
+
+            const rapidjson::Value& indexes_acessor = acessors[indexes_acessor_index];
+            std::vector<unsigned int> indexes = get_indexes(
+                read_acessor_data(buffer_views, buffers_contents, indexes_acessor)
+            );
+
+            int position_acessor_index = attributes["POSITION"].GetInt();
+            const rapidjson::Value& position_acessor = acessors[position_acessor_index];
+
+            std::vector<glm::vec3> points = get_points(
+                read_acessor_data(buffer_views, buffers_contents, position_acessor)
+            );
+            if (indexes.size() % 3 != 0) {
+                throw std::runtime_error("Error: can not divide indexes into triangles; count: " + std::to_string(indexes.size()));
+            }
+
+            for (size_t index = 0; index < indexes.size(); index += 3) {
+                Triangle triangle;
+                for (size_t point_index = 0; point_index < 3; point_index++) {
+                    triangle.coords[point_index] = translate(points[indexes[index + point_index]], matrix);
+                }
+                primitives.push_back(triangle);
+            }
+        }
+    }
+    std::cout << "primitives count: " << primitives.size() << std::endl;
+    scene.m_bvh = BVH(std::move(primitives));
+    scene.setup_distribution();
 
     return scene;
 }

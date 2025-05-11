@@ -62,9 +62,9 @@ glm::mat4x4 NodeList::get_transform(size_t index) const {
     return get_transform(m_parent[index]) * self_transform;
 }
 
-std::pair<glm::mat4x4, const rapidjson::Value &> NodeList::operator[](size_t index) const
+std::pair<const rapidjson::Value &, glm::mat4x4> NodeList::operator[](size_t index) const
 {
-    return {get_transform(index), m_nodes[index]};
+    return {m_nodes[index], get_transform(index)};
 }
 
 size_t NodeList::size() const {

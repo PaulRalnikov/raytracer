@@ -11,7 +11,7 @@ Camera Camera::fromGltfNodes(const NodeList& node_list, ConstJsonArray cameras, 
     Camera result;
     for (rapidjson::SizeType i = 0; i < node_list.size(); i++)
     {
-        auto[matrix, node] = node_list[i];
+        auto [node, matrix] = node_list[i];
 
         result.right = (matrix * glm::vec4(-1.0, 0.0, 0.0, 0.0)).xyz();
         result.up = (matrix * glm::vec4(0.0, 1.0, 0.0, 0.0)).xyz();

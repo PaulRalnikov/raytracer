@@ -9,7 +9,7 @@ class NodeList {
 public:
     NodeList(ConstJsonArray arr);
 
-    std::pair<glm::mat4x4, const rapidjson::Value&> operator[](size_t index) const;
+    std::pair<const rapidjson::Value&, glm::mat4x4> operator[](size_t index) const;
 
     size_t size() const;
 private:
