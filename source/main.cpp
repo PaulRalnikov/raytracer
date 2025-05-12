@@ -39,8 +39,6 @@ int main(int argc, char *argv[])
     // Scene scene;
     // scene.readTxt(input_path);
 
-    return 0;
-
     auto start = std::chrono::high_resolution_clock::now();
 
     RawPixels raw_pixels(scene.get_pixels());

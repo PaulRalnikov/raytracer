@@ -286,6 +286,13 @@ Scene Scene::fromGltf(std::string path, int width, int height, int samples) {
 
     scene.m_camera = Camera::fromGltfNodes(node_list, cameras, (float) width / height);
 
+    std::cout << "camera: " << std::endl;
+    std::cout << "position: " << scene.m_camera.position << std::endl;
+    std::cout << "fov " << scene.m_camera.fov_x << ' ' << scene.m_camera.fov_y << std::endl;
+    std::cout << "right " << scene.m_camera.right << std::endl;
+    std::cout << "up " << scene.m_camera.up << std::endl;
+    std::cout << "forward " << scene.m_camera.forward << std::endl;
+
     ConstJsonArray meshes = readArray(document, "meshes");
     ConstJsonArray acessors = readArray(document, "accessors");
     ConstJsonArray buffer_views = readArray(document, "bufferViews");
@@ -340,6 +347,7 @@ Scene Scene::fromGltf(std::string path, int width, int height, int samples) {
             std::cout << "color factor: " << new_material.base_color_factor << std::endl;
             std::cout << "emissive factor: " << new_material.emissive_factor << std::endl;
             std::cout << "metallic factor: " << new_material.metallic_factor << std::endl;
+            std::cout << "indexes size: " << indexes.size() << std::endl;
             std::cout << std::endl;
 
             for (size_t index = 0; index < indexes.size(); index += 3) {
@@ -358,6 +366,15 @@ Scene Scene::fromGltf(std::string path, int width, int height, int samples) {
                     triangle.material = MaterialType::METALLIC;
                 }
                 triangle.emission = new_material.emissive_factor;
+
+                if (index / 3 < 4) {
+                    std::cout << "triangle: " << std::endl;
+                    std::cout << "coordinates: " << std::endl;
+                    for (auto point : triangle.coords) {
+                        std::cout << point << std::endl;
+                    }
+                    std::cout << "color: " << triangle.color << std::endl;
+                }
 
                 primitives.push_back(triangle);
             }
