@@ -6,14 +6,11 @@
 #include <glm/gtc/quaternion.hpp>
 #include <rapidjson/document.h>
 
-#include "types.hpp"
-
 struct my_quat {
     glm::vec3 vec;
     float w;
     explicit my_quat(glm::vec3 v = glm::vec3(0), float w = 1);
     explicit my_quat(float x, float y, float z, float w);
-    explicit my_quat(ConstJsonArray array);
 
     my_quat operator*(const my_quat& q) const;
     glm::vec3 operator*(const glm::vec3& v) const;
@@ -38,8 +35,3 @@ float vec_min(glm::vec3 v);
 glm::vec3 pairwice_product(glm::vec3 v);
 
 float sum(glm::vec3);
-
-glm::vec3 vec3_from_array(ConstJsonArray array);
-glm::vec4 vec4_from_array(ConstJsonArray array);
-
-glm::mat4x4 mat4x4_from_array(ConstJsonArray array);

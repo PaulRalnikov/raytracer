@@ -4,8 +4,8 @@
 #include <glm/glm.hpp>
 #include <rapidjson/writer.h>
 
-#include "scene.hpp"
-#include "raw_pixels.hpp"
+#include "scene/scene.hpp"
+#include "utils/raw_pixels.hpp"
 
 std::string path_withoud_extention(std::string path) {
     while (path.back() != '.') {
@@ -35,7 +35,7 @@ int main(int argc, char *argv[])
 
     bool png_flag = (argc == DEFAULF_ARGC + 1 && std::string(argv[argc - 1]) == "--png");
 
-    Scene scene = Scene::fromGltf(input_path, width, height, samples);
+    Scene scene = Parser::parse(input_path, width, height, samples);
     // Scene scene;
     // scene.readTxt(input_path);
 

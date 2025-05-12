@@ -5,16 +5,25 @@
 
 #include <glm/vec2.hpp>
 
-#include "ray.hpp"
+#include "primitives/ray.hpp"
 #include "distribution/mix.hpp"
 #include "bvh/bvh.hpp"
-#include "camera.hpp"
+#include "parser/parser.hpp"
+
+class Parser;
+
+struct Camera {
+    glm::vec3 position;
+    glm::vec3 right;
+    glm::vec3 up;
+    glm::vec3 forward;
+    float fov_x, fov_y;
+};
 
 class Scene {
+    friend class Parser;
 public:
     void readTxt(std::string txt_path);
-
-    static Scene fromGltf(std::string path, int width, int height, int samples);
 
     std::vector<std::vector<glm::vec3> > get_pixels();
 

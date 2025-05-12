@@ -3,7 +3,7 @@
 #include <glm/gtc/matrix_transform.hpp>
 #include <glm/gtc/quaternion.hpp>
 
-#include "utils/my_glm.hpp"
+#include "glm_parse.hpp"
 
 NodeList::NodeList(ConstJsonArray arr):
     m_nodes(arr)
@@ -34,7 +34,7 @@ static glm::mat4x4 get_self_transform(const rapidjson::Value& node) {
     }
     my_quat rotation;
     if (node.HasMember("rotation")) {
-        rotation = my_quat(node["rotation"].GetArray());
+        rotation = my_quat_from_array(node["rotation"].GetArray());
     }
 
     glm::vec3 scale(1.f);
