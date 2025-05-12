@@ -59,11 +59,11 @@ static std::vector<unsigned int> get_real_data(const std::vector<char>& data, si
     } else if (data_size_bytes == 2) {
         unsigned short* begin = (unsigned short*)data.data();
         return std::vector<unsigned int>(begin, begin + data.size() / data_size_bytes);
-    } else if (data_size_bytes == 3) {
+    } else if (data_size_bytes == 4) {
         unsigned int *begin = (unsigned int *)data.data();
         return std::vector<unsigned int>(begin, begin + data.size() / data_size_bytes);
     }
-    throw std::runtime_error("Unexpected data_size_bytes: want size_t from 1 to 3, got " + std::to_string(data_size_bytes));
+    throw std::runtime_error("Unexpected data_size_bytes: want size_t from 1, 2 or 4, got " + std::to_string(data_size_bytes));
 }
 
 static size_t get_type_number_of_compoents(std::string type) {
@@ -222,8 +222,6 @@ Scene Scene::fromGltf(std::string path, int width, int height, int samples) {
         const rapidjson::Value& mesh = meshes[mesh_index];
         ConstJsonArray mesh_primitives = mesh["primitives"].GetArray();
 
-        std::cout << "node " << node["name"].GetString() << " size " << mesh_primitives.Size() << std::endl;
-
         for (rapidjson::SizeType prim_index = 0; prim_index < mesh_primitives.Size(); prim_index++) {
             const rapidjson::Value& primitive = mesh_primitives[prim_index];
             int indexes_acessor_index = primitive["indices"].GetInt();
@@ -251,13 +249,6 @@ Scene Scene::fromGltf(std::string path, int width, int height, int samples) {
                 new_material = NewMaterial(materials[material_index]);
             }
 
-            std::cout << "mesh " << mesh["name"].GetString() << " material: " << std::endl;
-            std::cout << "color factor: " << new_material.base_color_factor << std::endl;
-            std::cout << "emissive factor: " << new_material.emissive_factor << std::endl;
-            std::cout << "metallic factor: " << new_material.metallic_factor << std::endl;
-            std::cout << "indexes size: " << indexes.size() << std::endl;
-            std::cout << std::endl;
-
             for (size_t index = 0; index < indexes.size(); index += 3) {
                 Triangle triangle;
                 for (size_t point_index = 0; point_index < 3; point_index++) {
@@ -274,19 +265,11 @@ Scene Scene::fromGltf(std::string path, int width, int height, int samples) {
                     triangle.material = MaterialType::METALLIC;
                 }
                 triangle.emission = new_material.emissive_factor;
-                if (index == 0) {
-                    std::cout << "triangle" << std::endl;
-                    std::cout << "material " << to_string(triangle.material) << std::endl;
-                    std::cout << "color " << triangle.color << std::endl;
-                    std::cout << "emission " << triangle.emission << std::endl;
-                    std::cout << std::endl;
-                }
 
                 primitives.push_back(triangle);
             }
         }
     }
-    std::cout << "primitives count: " << primitives.size() << std::endl;
     scene.m_bvh = BVH(std::move(primitives));
     scene.setup_distribution();
 
