@@ -194,6 +194,7 @@ Scene Scene::fromGltf(std::string path, int width, int height, int samples) {
     scene.m_height = height;
     scene.m_samples = samples;
     scene.m_max_ray_depth = DEFAULT_RAY_DEPTH;
+    scene.m_background_color = glm::vec3(0.f);
 
     NodeList node_list(readArray(document, "nodes"));
     ConstJsonArray cameras = readArray(document, "cameras");
@@ -421,7 +422,8 @@ glm::vec3 Scene::raytrace(Ray ray, pcg32_random_t &rng, int depth) const
         return result;
     }
     case (MaterialType::METALLIC):
-        return triangle.emission + raytrace(reflected_ray, rng, depth + 1) * triangle.color;
+        glm::vec3 result = triangle.emission + raytrace(reflected_ray, rng, depth + 1) * triangle.color;
+        return result;
     }
     throw std::runtime_error("Unsupported type of material");
 }
