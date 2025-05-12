@@ -18,46 +18,37 @@ static inline glm::vec3 translate(glm::vec3 point, const glm::mat4x4 &translate)
     return (translate * glm::vec4(point, 1.f)).xyz();
 }
 
-struct NewMaterial
-{
+struct NewMaterial {
     glm::vec4 base_color_factor;
-    int metallic_factor;
+    float metallic_factor;
     glm::vec3 emissive_factor;
 
     NewMaterial() : base_color_factor(1.f),
                     metallic_factor(1),
                     emissive_factor(0.f)
-    {
-    }
+    {}
 
-    NewMaterial(const rapidjson::Value &material) : NewMaterial()
-    {
-        if (material.HasMember("emissiveFactor"))
-        {
+    NewMaterial(const rapidjson::Value &material) : NewMaterial(){
+        if (material.HasMember("emissiveFactor")) {
             emissive_factor = vec3_from_array(material["emissiveFactor"].GetArray());
         }
-        if (material.HasMember("extensions"))
-        {
+        if (material.HasMember("extensions")) {
             const rapidjson::Value &extensions = material["extensions"];
-            if (extensions.HasMember("KHR_materials_emissive_strength"))
-            {
+            if (extensions.HasMember("KHR_materials_emissive_strength")) {
                 const rapidjson::Value &KHR_materials_emissive_strength = extensions["KHR_materials_emissive_strength"];
-                emissive_factor *= KHR_materials_emissive_strength["emissiveStrength"].GetInt();
+                emissive_factor *= KHR_materials_emissive_strength["emissiveStrength"].GetFloat();
             }
         }
 
-        if (!material.HasMember("pbrMetallicRoughness"))
-        {
+        if (!material.HasMember("pbrMetallicRoughness")) {
             return;
         }
         const rapidjson::Value &pbr_metallic_roughtness = material["pbrMetallicRoughness"];
-        if (pbr_metallic_roughtness.HasMember("baseColorFactor"))
-        {
+        if (pbr_metallic_roughtness.HasMember("baseColorFactor")) {
             base_color_factor = vec4_from_array(pbr_metallic_roughtness["baseColorFactor"].GetArray());
         }
-        if (pbr_metallic_roughtness.HasMember("metallicFactor"))
-        {
-            metallic_factor = pbr_metallic_roughtness["metallicFactor"].GetInt();
+        if (pbr_metallic_roughtness.HasMember("metallicFactor")) {
+            metallic_factor = pbr_metallic_roughtness["metallicFactor"].GetFloat();
         }
     }
 };
@@ -146,7 +137,7 @@ static AcessorData read_acessor_data(
     return {std::vector<char> (it_start, it_end), type, component_type};
 }
 
-std::vector<unsigned int> get_indexes(AcessorData indexes_data) {
+static std::vector<unsigned int> get_indexes(AcessorData indexes_data) {
     auto [data, type, component_type] = indexes_data;
     if (type != "SCALAR") {
         throw std::runtime_error("Not scalar type in indexes acessor: " + type);
@@ -154,7 +145,7 @@ std::vector<unsigned int> get_indexes(AcessorData indexes_data) {
     return get_real_data(data, get_size_in_bytes(component_type));
 }
 
-std::vector<glm::vec3> get_points(AcessorData points_data) {
+static std::vector<glm::vec3> get_points(AcessorData points_data) {
     auto [data, type, component_type] = points_data;
     if (type != "VEC3") {
         throw std::runtime_error("Not VEC3 type in position acessor: " + type);
@@ -164,6 +155,36 @@ std::vector<glm::vec3> get_points(AcessorData points_data) {
     }
     glm::vec3* begin = (glm::vec3*)data.data();
     return std::vector<glm::vec3>(begin, begin + data.size() / sizeof(glm::vec3));
+}
+
+
+static Camera readCamera(const NodeList &node_list, ConstJsonArray cameras, float aspect_ratio) {
+    Camera result;
+    for (rapidjson::SizeType i = 0; i < node_list.size(); i++) {
+        auto [node, matrix] = node_list[i];
+        if (!node.HasMember("camera")){
+            continue;
+        }
+
+        result.right = (matrix * glm::vec4(1.0, 0.0, 0.0, 0.0)).xyz();
+        result.up = (matrix * glm::vec4(0.0, 1.0, 0.0, 0.0)).xyz();
+        result.forward = (matrix * glm::vec4(0.0, 0.0, -1.0, 0.0)).xyz();
+
+        result.position = (matrix * glm::vec4(glm::vec3(0.f), 1.f)).xyz();
+
+        int camera_index = node["camera"].GetInt();
+        const auto &camera = cameras[camera_index];
+        if (!camera.HasMember("perspective")) {
+            throw std::runtime_error("Found not perspective camera");
+        }
+
+        const auto &camera_params = camera["perspective"];
+        result.fov_y = camera_params["yfov"].GetFloat();
+        result.fov_x = atan(aspect_ratio * tan(result.fov_y / 2)) * 2;
+
+        break;
+    }
+    return result;
 }
 
 Scene Parser::parse(std::string path, int width, int height, int samples)
@@ -196,15 +217,14 @@ Scene Parser::parse(std::string path, int width, int height, int samples)
     scene.m_background_color = glm::vec3(0.f);
 
     NodeList node_list(readArray(document, "nodes"));
-    ConstJsonArray cameras = readArray(document, "cameras");
-
-    scene.m_camera = readCamera(node_list, cameras, (float)width / height);
-
+    ConstJsonArray materials = readArray(document, "materials");
     ConstJsonArray meshes = readArray(document, "meshes");
     ConstJsonArray acessors = readArray(document, "accessors");
     ConstJsonArray buffer_views = readArray(document, "bufferViews");
     ConstJsonArray buffers = readArray(document, "buffers");
-    ConstJsonArray materials = readArray(document, "materials");
+
+    ConstJsonArray cameras = readArray(document, "cameras");
+    scene.m_camera = readCamera(node_list, cameras, (float)width / height);
 
     std::vector<std::vector<char>> buffers_contents = readBuffersContents(
         buffers, std::filesystem::path(path).parent_path());
@@ -212,9 +232,8 @@ Scene Parser::parse(std::string path, int width, int height, int samples)
     std::vector<Triangle> primitives;
     for (size_t node_index = 0; node_index < node_list.size(); node_index++)
     {
-        auto [node, matrix] = node_list[node_index];
-        if (!node.HasMember("mesh"))
-        {
+        auto [node, translation] = node_list[node_index];
+        if (!node.HasMember("mesh")) {
             continue;
         }
 
@@ -238,36 +257,30 @@ Scene Parser::parse(std::string path, int width, int height, int samples)
 
             std::vector<glm::vec3> points = get_points(
                 read_acessor_data(buffer_views, buffers_contents, position_acessor));
-            if (indexes.size() % 3 != 0)
-            {
+            if (indexes.size() % 3 != 0) {
                 throw std::runtime_error("Error: can not divide indexes into triangles; count: " + std::to_string(indexes.size()));
             }
 
             NewMaterial new_material;
-            if (primitive.HasMember("material"))
-            {
+            if (primitive.HasMember("material")) {
                 int material_index = primitive["material"].GetInt();
                 new_material = NewMaterial(materials[material_index]);
             }
 
-            for (size_t index = 0; index < indexes.size(); index += 3)
-            {
+            for (size_t index = 0; index < indexes.size(); index += 3) {
                 Triangle triangle;
-                for (size_t point_index = 0; point_index < 3; point_index++)
-                {
-                    triangle.coords[point_index] = translate(points[indexes[index + point_index]], matrix);
+                for (size_t point_index = 0; point_index < 3; point_index++) {
+                    triangle.coords[point_index] = translate(points[indexes[index + point_index]], translation);
                 }
 
                 triangle.material = MaterialType::DIFFUSE;
 
                 triangle.color = new_material.base_color_factor.xyz();
-                if (new_material.base_color_factor.w < 1.0)
-                {
+                if (new_material.base_color_factor.w < 1.0) {
                     triangle.material = MaterialType::DIELECTRIC;
                     triangle.ior = 1.5;
                 }
-                else if (new_material.metallic_factor > 0)
-                {
+                else if (new_material.metallic_factor > 0) {
                     triangle.material = MaterialType::METALLIC;
                 }
                 triangle.emission = new_material.emissive_factor;
@@ -280,36 +293,4 @@ Scene Parser::parse(std::string path, int width, int height, int samples)
     scene.setup_distribution();
 
     return scene;
-}
-
-Camera Parser::readCamera(const NodeList &node_list, ConstJsonArray cameras, float aspect_ratio) {
-    Camera result;
-    for (rapidjson::SizeType i = 0; i < node_list.size(); i++)
-    {
-        auto [node, matrix] = node_list[i];
-        if (!node.HasMember("camera"))
-        {
-            continue;
-        }
-
-        result.right = (matrix * glm::vec4(1.0, 0.0, 0.0, 0.0)).xyz();
-        result.up = (matrix * glm::vec4(0.0, 1.0, 0.0, 0.0)).xyz();
-        result.forward = (matrix * glm::vec4(0.0, 0.0, -1.0, 0.0)).xyz();
-
-        result.position = (matrix * glm::vec4(glm::vec3(0.f), 1.f)).xyz();
-
-        int camera_index = node["camera"].GetInt();
-        const auto &camera = cameras[camera_index];
-        if (!camera.HasMember("perspective"))
-        {
-            throw std::runtime_error("Found not perspective camera");
-        }
-
-        const auto &camera_params = camera["perspective"];
-        result.fov_y = camera_params["yfov"].GetFloat();
-        result.fov_x = atan(aspect_ratio * tan(result.fov_y / 2)) * 2;
-
-        break;
-    }
-    return result;
 }

@@ -44,7 +44,7 @@ glm::mat4x4 mat4x4_from_array(ConstJsonArray array) {
     }
     glm::mat4x4 result;
     for (size_t i = 0; i < 4; i++) {
-        for (size_t j = 0; j, 4; j++) {
+        for (size_t j = 0; j < 4; j++) {
             result[i][j] = array[i * 4 + j].GetFloat();
         }
     };
