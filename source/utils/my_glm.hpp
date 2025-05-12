@@ -24,7 +24,7 @@ struct my_quat {
 };
 
 std::ostream &operator<<(std::ostream &out, const glm::vec3 v);
-
+std::ostream &operator<<(std::ostream &out, const glm::vec4 v);
 std::ostream &operator<<(std::ostream &out, const my_quat v);
 
 std::ifstream &operator>>(std::ifstream &in, glm::vec3 &vec);
@@ -40,5 +40,6 @@ glm::vec3 pairwice_product(glm::vec3 v);
 float sum(glm::vec3);
 
 glm::vec3 vec3_from_array(ConstJsonArray array);
+glm::vec4 vec4_from_array(ConstJsonArray array);
 
 glm::mat4x4 mat4x4_from_array(ConstJsonArray array);

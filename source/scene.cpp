@@ -3,6 +3,7 @@
 #include <functional>
 #include <cmath>
 #include <filesystem>
+#include <optional>
 
 #include <glm/glm.hpp>
 #include <glm/gtc/constants.hpp>
@@ -216,6 +217,43 @@ static inline glm::vec3 translate(glm::vec3 point, const glm::mat4x4& translate)
     return (translate * glm::vec4(point, 1.f)).xyz();
 }
 
+struct NewMaterial{
+    glm::vec4 base_color_factor;
+    int metallic_factor;
+    glm::vec3 emissive_factor;
+
+    NewMaterial():
+        base_color_factor(1.f),
+        metallic_factor(1),
+        emissive_factor(0.f)
+    {}
+
+    NewMaterial(const rapidjson::Value& material): NewMaterial() {
+        if (material.HasMember("emissiveFactor")) {
+            emissive_factor = vec3_from_array(material["emissiveFactor"].GetArray());
+        }
+        if (material.HasMember("extensions")) {
+            const rapidjson::Value &extensions = material["extensions"];
+            if (extensions.HasMember("KHR_materials_emissive_strength")) {
+                const rapidjson::Value &KHR_materials_emissive_strength = extensions["KHR_materials_emissive_strength"];
+                emissive_factor *= KHR_materials_emissive_strength["emissiveStrength"].GetInt();
+            }
+        }
+
+        if (!material.HasMember("pbrMetallicRoughness")) {
+            return;
+        }
+        const rapidjson::Value& pbr_metallic_roughtness = material["pbrMetallicRoughness"];
+        if (pbr_metallic_roughtness.HasMember("baseColorFactor")) {
+            base_color_factor = vec4_from_array(pbr_metallic_roughtness["baseColorFactor"].GetArray());
+        }
+        if (pbr_metallic_roughtness.HasMember("metallicFactor")) {
+            metallic_factor = pbr_metallic_roughtness["metallicFactor"].GetInt();
+        }
+
+    }
+};
+
 Scene Scene::fromGltf(std::string path, int width, int height, int samples) {
     const static int DEFAULT_RAY_DEPTH = 6;
 
@@ -252,6 +290,7 @@ Scene Scene::fromGltf(std::string path, int width, int height, int samples) {
     ConstJsonArray acessors = readArray(document, "accessors");
     ConstJsonArray buffer_views = readArray(document, "bufferViews");
     ConstJsonArray buffers = readArray(document, "buffers");
+    ConstJsonArray materials = readArray(document, "materials");
 
     std::vector<std::vector<char> > buffers_contents = readBuffersContents(
         buffers, std::filesystem::path(path).parent_path()
@@ -291,11 +330,35 @@ Scene Scene::fromGltf(std::string path, int width, int height, int samples) {
                 throw std::runtime_error("Error: can not divide indexes into triangles; count: " + std::to_string(indexes.size()));
             }
 
+            NewMaterial new_material;
+            if (primitive.HasMember("material")) {
+                int material_index = primitive["material"].GetInt();
+                new_material = NewMaterial(materials[material_index]);
+            }
+
+            std::cout << "mesh " << mesh["name"].GetString() << " material: " << std::endl;
+            std::cout << "color factor: " << new_material.base_color_factor << std::endl;
+            std::cout << "emissive factor: " << new_material.emissive_factor << std::endl;
+            std::cout << "metallic factor: " << new_material.metallic_factor << std::endl;
+            std::cout << std::endl;
+
             for (size_t index = 0; index < indexes.size(); index += 3) {
                 Triangle triangle;
                 for (size_t point_index = 0; point_index < 3; point_index++) {
                     triangle.coords[point_index] = translate(points[indexes[index + point_index]], matrix);
                 }
+
+                triangle.material = MaterialType::DIFFUSE;
+
+                triangle.color = new_material.base_color_factor.xyz();
+                if (new_material.base_color_factor.w < 1.0) {
+                    triangle.material = MaterialType::DIELECTRIC;
+                    triangle.ior = 1.5;
+                } else if (new_material.metallic_factor > 0) {
+                    triangle.material = MaterialType::METALLIC;
+                }
+                triangle.emission = new_material.emissive_factor;
+
                 primitives.push_back(triangle);
             }
         }

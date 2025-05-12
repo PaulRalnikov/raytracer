@@ -60,9 +60,12 @@ std::ifstream &operator>>(std::ifstream &in, my_quat &q)
     return in;
 }
 
-std::ostream &operator<<(std::ostream &out, const glm::vec3 v)
-{
+std::ostream &operator<<(std::ostream &out, const glm::vec3 v) {
     return out << v.x << ' ' << v.y << ' ' << v.z;
+}
+
+std::ostream &operator<<(std::ostream &out, const glm::vec4 v) {
+    return out << v.x << ' ' << v.y << ' ' << v.z << ' ' << v.w;
 }
 
 std::ostream &operator<<(std::ostream &out, const my_quat q)
@@ -95,6 +98,18 @@ glm::vec3 vec3_from_array(ConstJsonArray array) {
         array[0].GetFloat(),
         array[1].GetFloat(),
         array[2].GetFloat()
+    );
+}
+
+glm::vec4 vec4_from_array(ConstJsonArray array) {
+    if (array.Size() != 4) {
+        throw std::runtime_error("Error: array length must be equal to 3");
+    }
+    return glm::vec4(
+        array[0].GetFloat(),
+        array[1].GetFloat(),
+        array[2].GetFloat(),
+        array[3].GetFloat()
     );
 }
 
