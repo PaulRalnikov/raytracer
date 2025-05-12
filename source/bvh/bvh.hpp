@@ -1,23 +1,23 @@
 #pragma once
 #include <vector>
-#include "primitives/primitive.hpp"
+#include "primitives/triangle.hpp"
 #include "utils/random.hpp"
 #include "aabb.hpp"
 
-using Intersection = std::optional<std::pair<float, std::reference_wrapper<const Primitive>>>;
-using ConstPrimitiveIterator = std::vector<Primitive>::const_iterator;
-using PrimitiveIterator = std::vector<Primitive>::iterator;
+using Intersection = std::optional<std::pair<float, std::reference_wrapper<const Triangle>>>;
+using ConstTriangleIterator = std::vector<Triangle>::const_iterator;
+using TriangleIterator = std::vector<Triangle>::iterator;
 class BVH {
 public:
-    BVH(std::vector<Primitive>&& primitives = {});
+    BVH(std::vector<Triangle>&& primitives = {});
 
-    ConstPrimitiveIterator begin() const;
-    ConstPrimitiveIterator end() const;
+    ConstTriangleIterator begin() const;
+    ConstTriangleIterator end() const;
     size_t size() const;
 
-    const Primitive& operator[](size_t i) const;
+    const Triangle& operator[](size_t i) const;
 
-    Intersection intersect(
+    Intersection iintersect(
         Ray ray,
         float max_distance = std::numeric_limits<float>::infinity()
     ) const;
@@ -26,31 +26,25 @@ public:
     float pdf(const Ray &ray) const;
 private:
     //return index of node in m_nodes
-    size_t build(PrimitiveIterator begin, PrimitiveIterator end);
+    size_t build(TriangleIterator begin, TriangleIterator end);
 
     struct Node{
         int left_child;
         int right_child;
-        ConstPrimitiveIterator begin;
-        ConstPrimitiveIterator end;
+        ConstTriangleIterator begin;
+        ConstTriangleIterator end;
         AABB aabb;
 
-        Node(int left_child, int right_child, ConstPrimitiveIterator begin, ConstPrimitiveIterator end);
+        Node(int left_child, int right_child, ConstTriangleIterator begin, ConstTriangleIterator end);
     };
 
-    Intersection intersect(
+    Intersection intersect_with_node(
         const Ray& ray,
         const Node& node,
         float max_distance = std::numeric_limits<float>::infinity()
     ) const;
 
-    Intersection intersect_with_nodes(
-        const Ray &ray,
-        float max_distance = std::numeric_limits<float>::infinity()
-    ) const;
-
-    std::vector<Primitive> m_primitives;
+    std::vector<Triangle> m_triangles;
     std::vector<Node> m_nodes;
-    ConstPrimitiveIterator m_planes_end;
     size_t m_root;
 };

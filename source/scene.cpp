@@ -12,98 +12,12 @@
 #include <rapidjson/error/en.h>
 
 #include "distribution/cos_weighted.hpp"
-#include "distribution/box.hpp"
-#include "distribution/ellipsoid.hpp"
-#include "distribution/primitive.hpp"
-#include "primitives/primitive.hpp"
+#include "distribution/multi_triangle.hpp"
+#include "primitives/triangle.hpp"
 #include "scene.hpp"
 #include "ray.hpp"
 #include "utils/random.hpp"
 #include "utils/task_pool.hpp"
-
-void Scene::readTxt(std::string txt_path)
-{
-    std::ifstream in;
-    in.open(txt_path);
-
-    std::string command;
-    while (in >> command)
-    {
-        if (command == "DIMENSIONS")
-        {
-            in >> m_width >> m_height;
-        }
-        else if (command == "BG_COLOR")
-        {
-            in >> m_background_color.x >> m_background_color.y >> m_background_color.z;
-        }
-        else if (command == "CAMERA_POSITION")
-        {
-            in >> m_camera.position;
-        }
-        else if (command == "CAMERA_RIGHT")
-        {
-            in >> m_camera.right;
-        }
-        else if (command == "CAMERA_UP")
-        {
-            in >> m_camera.up;
-        }
-        else if (command == "CAMERA_FORWARD")
-        {
-            in >> m_camera.forward;
-        }
-        else if (command == "CAMERA_FOV_X")
-        {
-            in >> m_camera.fov_x;
-        }
-        else if (command == "SAMPLES")
-        {
-            in >> m_samples;
-        }
-        else if (command == "RAY_DEPTH")
-        {
-            in >> m_max_ray_depth;
-        }
-        else if (command == "NEW_PRIMITIVE")
-        {
-            break;
-        }
-    }
-
-    m_camera.fov_y = atan(m_height / (float)m_width * tan(m_camera.fov_x / 2)) * 2;
-
-    std::vector<Primitive> primitives;
-    while (in >> command)
-    {
-        if (command == "BOX")
-        {
-            Box box;
-            in >> box;
-            primitives.emplace_back(box);
-        }
-        else if (command == "PLANE")
-        {
-            Plane plane;
-            in >> plane;
-            primitives.emplace_back(plane);
-        }
-        else if (command == "ELLIPSOID")
-        {
-            Ellipsoid ellipsoid;
-            in >> ellipsoid;
-            primitives.push_back(ellipsoid);
-        }
-        else if (command == "TRIANGLE")
-        {
-            Triangle triangle;
-            in >> triangle;
-            primitives.push_back(triangle);
-        }
-    }
-    m_bvh = BVH(std::move(primitives));
-    setup_distribution();
-}
 
 static ConstJsonArray readArray(const rapidjson::Document& document, const char* name) {
     const rapidjson::Value& value = document[name];
@@ -286,13 +200,6 @@ Scene Scene::fromGltf(std::string path, int width, int height, int samples) {
 
     scene.m_camera = Camera::fromGltfNodes(node_list, cameras, (float) width / height);
 
-    std::cout << "camera: " << std::endl;
-    std::cout << "position: " << scene.m_camera.position << std::endl;
-    std::cout << "fov " << scene.m_camera.fov_x << ' ' << scene.m_camera.fov_y << std::endl;
-    std::cout << "right " << scene.m_camera.right << std::endl;
-    std::cout << "up " << scene.m_camera.up << std::endl;
-    std::cout << "forward " << scene.m_camera.forward << std::endl;
-
     ConstJsonArray meshes = readArray(document, "meshes");
     ConstJsonArray acessors = readArray(document, "accessors");
     ConstJsonArray buffer_views = readArray(document, "bufferViews");
@@ -303,7 +210,7 @@ Scene Scene::fromGltf(std::string path, int width, int height, int samples) {
         buffers, std::filesystem::path(path).parent_path()
     );
 
-    std::vector<Primitive> primitives;
+    std::vector<Triangle> primitives;
     for (size_t node_index = 0; node_index < node_list.size(); node_index++) {
         auto [node, matrix] = node_list[node_index];
         if (!node.HasMember("mesh")) {
@@ -366,14 +273,12 @@ Scene Scene::fromGltf(std::string path, int width, int height, int samples) {
                     triangle.material = MaterialType::METALLIC;
                 }
                 triangle.emission = new_material.emissive_factor;
-
-                if (index / 3 < 4) {
-                    std::cout << "triangle: " << std::endl;
-                    std::cout << "coordinates: " << std::endl;
-                    for (auto point : triangle.coords) {
-                        std::cout << point << std::endl;
-                    }
-                    std::cout << "color: " << triangle.color << std::endl;
+                if (index == 0) {
+                    std::cout << "triangle" << std::endl;
+                    std::cout << "material " << to_string(triangle.material) << std::endl;
+                    std::cout << "color " << triangle.color << std::endl;
+                    std::cout << "emission " << triangle.emission << std::endl;
+                    std::cout << std::endl;
                 }
 
                 primitives.push_back(triangle);
@@ -432,16 +337,16 @@ glm::vec3 Scene::raytrace(Ray ray, pcg32_random_t &rng, int depth) const
     {
         return glm::vec3(0);
     }
-    auto intersection = m_bvh.intersect(ray);
+    auto intersection = m_bvh.iintersect(ray);
     if (!intersection.has_value())
         return m_background_color;
 
-    const Primitive &primitive = intersection.value().second;
+    const Triangle &triangle = intersection.value().second;
 
     float t = intersection.value().first; // ray position
     glm::vec3 point = ray.position + ray.direction * t;
 
-    glm::vec3 normal = get_normal(primitive, point);
+    glm::vec3 normal = triangle.get_normal();
     static const float SHIFT = 1e-4;
 
     float normal_direction_cos = glm::dot(normal, ray.direction);
@@ -455,13 +360,13 @@ glm::vec3 Scene::raytrace(Ray ray, pcg32_random_t &rng, int depth) const
     reflected_direction = glm::normalize(reflected_direction);
     Ray reflected_ray(point + reflected_direction * SHIFT, reflected_direction);
 
-    switch (get_material_type(primitive))
+    switch (triangle.material)
     {
     case (MaterialType::DIELECTRIC):
     {
         // Snell's law
         float mu_1 = 1;
-        float mu_2 = get_ior(primitive);
+        float mu_2 = triangle.ior;
 
         float cos_theta_1 = -normal_direction_cos;
         if (inside)
@@ -472,7 +377,7 @@ glm::vec3 Scene::raytrace(Ray ray, pcg32_random_t &rng, int depth) const
         float sin_theta_2 = mu_1 / mu_2 * std::sqrt(1 - std::pow(cos_theta_1, 2));
         if (std::abs(sin_theta_2) > 1)
         {
-            return get_emission(primitive) + raytrace(reflected_ray, rng, depth + 1);
+            return triangle.emission + raytrace(reflected_ray, rng, depth + 1);
         }
         float cos_theta_2 = std::sqrt(1 - std::pow(sin_theta_2, 2));
 
@@ -483,7 +388,7 @@ glm::vec3 Scene::raytrace(Ray ray, pcg32_random_t &rng, int depth) const
         if (random_float(0, 1, rng) < r)
         {
             // choose reflection
-            return get_emission(primitive) + raytrace(reflected_ray, rng, depth + 1);
+            return triangle.emission + raytrace(reflected_ray, rng, depth + 1);
         }
         // choose refraction
         glm::vec3 refracted_direction = mu_1 / mu_2 * ray.direction + (cos_theta_1 * mu_1 / mu_2 - cos_theta_2) * normal;
@@ -493,30 +398,30 @@ glm::vec3 Scene::raytrace(Ray ray, pcg32_random_t &rng, int depth) const
         glm::vec3 refracted_color = raytrace(refracted_ray, rng, depth + 1);
         if (!inside)
         {
-            refracted_color *= get_color(primitive);
+            refracted_color *= triangle.color;
         }
-        return get_emission(primitive) + refracted_color;
+        return triangle.emission + refracted_color;
     }
     case (MaterialType::DIFFUSE):
     {
         glm::vec3 w = m_mis_distribution.sample(point, normal, rng);
         float normal_w_cos = glm::dot(w, normal);
-        if (normal_w_cos <= 0 || get_color(primitive) == glm::vec3(0.0))
+        if (normal_w_cos <= 0 || triangle.color == glm::vec3(0.0))
         {
-            return get_emission(primitive);
+            return triangle.emission;
         }
         float pdf = m_mis_distribution.pdf(point, normal, w);
         if (pdf == 0.f)
         {
-            return get_emission(primitive);
+            return triangle.emission;
         }
         Ray random_ray = Ray(point + w * SHIFT, w);
         glm::vec3 L_in = raytrace(random_ray, rng, depth + 1);
-        glm::vec3 result = get_emission(primitive) + get_color(primitive) / glm::pi<float>() * L_in * normal_w_cos / pdf;
+        glm::vec3 result = triangle.emission + triangle.color / glm::pi<float>() * L_in * normal_w_cos / pdf;
         return result;
     }
     case (MaterialType::METALLIC):
-        return get_emission(primitive) + raytrace(reflected_ray, rng, depth + 1) * get_color(primitive);
+        return triangle.emission + raytrace(reflected_ray, rng, depth + 1) * triangle.color;
     }
     throw std::runtime_error("Unsupported type of material");
 }
@@ -542,39 +447,18 @@ Ray Scene::ray_to_pixel(glm::vec2 pixel) const {
 void Scene::setup_distribution() {
     // direct light sampling
 
-    std::vector<FinitePrimitive> finite_primitives;
-    for (const auto &el : m_bvh)
-    {
-        struct Visitor {
-            std::vector<FinitePrimitive>& finite_primitives;
-
-            void operator()(const Box& box) {
-                if (box.emission != glm::vec3(0.0)) {
-                    finite_primitives.emplace_back(box);
-                }
-            }
-
-            void operator()(const Ellipsoid& ellipsoid) {
-                if (ellipsoid.emission != glm::vec3(0.0)) {
-                    finite_primitives.emplace_back(ellipsoid);
-                }
-            }
-
-            void operator()(const Plane& plane) {}
-            void operator()(const Triangle& triangle) {
-                if (triangle.emission != glm::vec3(0.0)) {
-                    finite_primitives.emplace_back(triangle);
-                }
-            }
-        };
-        std::visit(Visitor{finite_primitives}, el);
+    std::vector<Triangle> light_triangles;
+    for (const auto &el : m_bvh) {
+        if (el.emission != glm::vec3(0.0)) {
+            light_triangles.emplace_back(el);
+        }
     }
 
     m_mis_distribution.add_distribution(std::make_shared<CosWeighttedDistrubution>());
-    if (!finite_primitives.empty()) {
+    if (!light_triangles.empty()) {
         std::cout << "Added dis distribution" << std::endl;
         m_mis_distribution.add_distribution(
-            std::make_shared<PrimitiveDistribution>(std::move(finite_primitives))
+            std::make_shared<MultiTriangleDistribution>(std::move(light_triangles))
         );
     }
 }

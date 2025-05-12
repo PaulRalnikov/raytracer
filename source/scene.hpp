@@ -5,7 +5,6 @@
 
 #include <glm/vec2.hpp>
 
-#include "primitives/primitive.hpp"
 #include "ray.hpp"
 #include "distribution/mix.hpp"
 #include "bvh/bvh.hpp"
