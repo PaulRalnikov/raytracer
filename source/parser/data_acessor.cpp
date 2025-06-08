@@ -5,7 +5,7 @@
 #include "types.hpp"
 #include "utils.hpp"
 
-AcessorData read_acessor_data(
+DataAcessor read_acessor_data(
     ConstJsonArray buffer_views,
     const std::vector<std::vector<char> >& buffers_contents,
     const rapidjson::Value& acessor

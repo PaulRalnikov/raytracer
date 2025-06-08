@@ -12,7 +12,7 @@
 #include "utils.hpp"
 #include "data_acessor.hpp"
 
-static std::vector<unsigned int> get_indexes(AcessorData indexes_data) {
+static std::vector<unsigned int> get_indexes(DataAcessor indexes_data) {
     auto [data, type, component_type] = indexes_data;
     if (type != "SCALAR") {
         throw std::runtime_error("Not scalar type in indexes acessor: " + type);
@@ -20,7 +20,7 @@ static std::vector<unsigned int> get_indexes(AcessorData indexes_data) {
     return get_real_data(data, get_size_in_bytes(component_type));
 }
 
-static std::vector<glm::vec3> get_points(AcessorData points_data) {
+static std::vector<glm::vec3> get_points(DataAcessor points_data) {
     auto [data, type, component_type] = points_data;
     if (type != "VEC3") {
         throw std::runtime_error("Not VEC3 type in position acessor: " + type);
@@ -32,7 +32,7 @@ static std::vector<glm::vec3> get_points(AcessorData points_data) {
     return std::vector<glm::vec3>(begin, begin + data.size() / sizeof(glm::vec3));
 }
 
-static std::vector<glm::vec3> get_normals(AcessorData normals_data) {
+static std::vector<glm::vec3> get_normals(DataAcessor normals_data) {
     auto [data, type, component_type] = normals_data;
     if (type != "VEC3") {
         throw std::runtime_error("Not VEC3 type in normal acessor: " + type);
