@@ -5,46 +5,46 @@
 
 #include "glm_parse.hpp"
 
-NodeList::NodeList(ConstJsonArray arr):
-    m_nodes(arr)
+NodeList::NodeList(nlohmann::json & nodes)
 {
-    m_parent.resize(arr.Size(), -1);
-    for (rapidjson::SizeType node_num = 0; node_num < arr.Size(); node_num++) {
+    for (auto& node : nodes) {
+        m_nodes.push_back(node);
+    }
+    m_parent.resize(m_nodes.size(), -1);
+    for (size_t node_num = 0; node_num < m_nodes.size(); node_num++) {
 
-        if (!m_nodes[node_num].HasMember("children")) {
+        if (!m_nodes[node_num].get().contains("children")) {
             continue;
         }
-        ConstJsonArray children = m_nodes[node_num]["children"].GetArray();
-        for (rapidjson::SizeType children_idx = 0; children_idx < children.Size(); children_idx++) {
-            int children_num = children[children_idx].GetInt();
-
-            if (m_parent[children_num] != -1) {
-                throw std::runtime_error("Node" + std::to_string(children_num) + "have two or more parents");
+        std::vector<int> children = m_nodes[node_num].get()["children"];
+        for (auto child_num : children) {
+            if (m_parent[child_num] != -1) {
+                throw std::runtime_error("Node" + std::to_string(child_num) + "have two or more parents");
             }
 
-            m_parent[children_num] = node_num;
+            m_parent[child_num] = node_num;
         }
     }
 }
 
-static glm::mat4x4 get_self_transform(const rapidjson::Value& node) {
+static glm::mat4x4 get_self_transform(const nlohmann::json& node) {
     glm::mat4x4 result(1.f);
-    if (node.HasMember("matrix")) {
-        return mat4x4_from_array(node["matrix"].GetArray());
+    if (node.contains("matrix")) {
+        return mat4x4_from_array(node["matrix"]);
     }
     my_quat rotation;
-    if (node.HasMember("rotation")) {
-        rotation = my_quat_from_array(node["rotation"].GetArray());
+    if (node.contains("rotation")) {
+        rotation = my_quat_from_array(node["rotation"]);
     }
 
     glm::vec3 scale(1.f);
-    if (node.HasMember("scale")) {
-        scale = vec3_from_array(node["scale"].GetArray());
+    if (node.contains("scale")) {
+        scale = vec3_from_array(node["scale"]);
     }
 
     glm::vec3 traslation(0.f);
-    if (node.HasMember("translation")) {
-        traslation = vec3_from_array(node["translation"].GetArray());
+    if (node.contains("translation")) {
+        traslation = vec3_from_array(node["translation"]);
     }
 
     glm::mat4x4 traslation_mat = glm::translate(glm::mat4x4(1.f), traslation);
@@ -62,7 +62,7 @@ glm::mat4x4 NodeList::get_transform(size_t index) const {
     return get_transform(m_parent[index]) * self_transform;
 }
 
-std::pair<const rapidjson::Value &, glm::mat4x4> NodeList::operator[](size_t index) const
+std::pair<const nlohmann::json &, glm::mat4x4> NodeList::operator[](size_t index) const
 {
     return {m_nodes[index], get_transform(index)};
 }

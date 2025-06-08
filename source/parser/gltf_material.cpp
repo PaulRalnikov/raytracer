@@ -7,26 +7,26 @@ GltfMaterial::GltfMaterial() :
     emissive_factor(0.f)
 {}
 
-GltfMaterial::GltfMaterial(const rapidjson::Value &material) : GltfMaterial() {
-    if (material.HasMember("emissiveFactor")) {
-        emissive_factor = vec3_from_array(material["emissiveFactor"].GetArray());
+GltfMaterial::GltfMaterial(const nlohmann::json &material) : GltfMaterial() {
+    if (material.contains("emissiveFactor")) {
+        emissive_factor = vec3_from_array(material["emissiveFactor"]);
     }
-    if (material.HasMember("extensions")) {
-        const rapidjson::Value &extensions = material["extensions"];
-        if (extensions.HasMember("KHR_materials_emissive_strength")) {
-            const rapidjson::Value &KHR_materials_emissive_strength = extensions["KHR_materials_emissive_strength"];
-            emissive_factor *= KHR_materials_emissive_strength["emissiveStrength"].GetFloat();
+    if (material.contains("extensions")) {
+        const auto &extensions = material["extensions"];
+        if (extensions.contains("KHR_materials_emissive_strength")) {
+            const auto &KHR_materials_emissive_strength = extensions["KHR_materials_emissive_strength"];
+            emissive_factor *= KHR_materials_emissive_strength["emissiveStrength"];
         }
     }
 
-    if (!material.HasMember("pbrMetallicRoughness")) {
+    if (!material.contains("pbrMetallicRoughness")) {
         return;
     }
-    const rapidjson::Value &pbr_metallic_roughtness = material["pbrMetallicRoughness"];
-    if (pbr_metallic_roughtness.HasMember("baseColorFactor")) {
-        base_color_factor = vec4_from_array(pbr_metallic_roughtness["baseColorFactor"].GetArray());
+    const auto &pbr_metallic_roughtness = material["pbrMetallicRoughness"];
+    if (pbr_metallic_roughtness.contains("baseColorFactor")) {
+        base_color_factor = vec4_from_array(pbr_metallic_roughtness["baseColorFactor"]);
     }
-    if (pbr_metallic_roughtness.HasMember("metallicFactor")) {
-        metallic_factor = pbr_metallic_roughtness["metallicFactor"].GetFloat();
+    if (pbr_metallic_roughtness.contains("metallicFactor")) {
+        metallic_factor = pbr_metallic_roughtness["metallicFactor"];
     }
 }

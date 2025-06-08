@@ -4,7 +4,6 @@
 
 #include <glm/glm.hpp>
 #include <glm/gtc/quaternion.hpp>
-#include <rapidjson/document.h>
 
 struct my_quat {
     glm::vec3 vec;

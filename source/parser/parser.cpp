@@ -1,10 +1,7 @@
 #include "parser.hpp"
 
 #include <filesystem>
-
-#include <rapidjson/document.h>
-#include <rapidjson/istreamwrapper.h>
-#include <rapidjson/error/en.h>
+#include <nlohmann/json.hpp>
 
 #include "glm_parse.hpp"
 #include "utils/my_glm.hpp"
@@ -12,53 +9,21 @@
 #include "utils.hpp"
 #include "data_acessor.hpp"
 
-static std::vector<unsigned int> get_indexes(DataAcessor indexes_data) {
-    auto [data, type, component_type] = indexes_data;
-    if (type != "SCALAR") {
-        throw std::runtime_error("Not scalar type in indexes acessor: " + type);
-    }
-    return get_real_data(data, get_size_in_bytes(component_type));
-}
-
-static std::vector<glm::vec3> get_points(DataAcessor points_data) {
-    auto [data, type, component_type] = points_data;
-    if (type != "VEC3") {
-        throw std::runtime_error("Not VEC3 type in position acessor: " + type);
-    }
-    if (get_size_in_bytes(component_type) != 4) {
-        throw std::runtime_error("Unexpected component type: want 4-bytes type, got " + component_type);
-    }
-    glm::vec3* begin = (glm::vec3*)data.data();
-    return std::vector<glm::vec3>(begin, begin + data.size() / sizeof(glm::vec3));
-}
-
-static std::vector<glm::vec3> get_normals(DataAcessor normals_data) {
-    auto [data, type, component_type] = normals_data;
-    if (type != "VEC3") {
-        throw std::runtime_error("Not VEC3 type in normal acessor: " + type);
-    }
-    if (get_size_in_bytes(component_type) != 4) {
-        throw std::runtime_error("Unexpected component type: want 4-bytes type, got " + component_type);
-    }
-    glm::vec3* begin = (glm::vec3*)data.data();
-    return std::vector<glm::vec3>(begin, begin + data.size() / sizeof(glm::vec3));
-}
-
 static Camera readCamera(const NodeList &node_list, ConstJsonArray cameras, float aspect_ratio) {
-    for (rapidjson::SizeType i = 0; i < node_list.size(); i++) {
+    for (size_t i = 0; i < node_list.size(); i++) {
         auto [node, matrix] = node_list[i];
-        if (!node.HasMember("camera")){
+        if (!node.contains("camera")){
             continue;
         }
 
-        int camera_index = node["camera"].GetInt();
-        const auto &camera = cameras[camera_index];
-        if (!camera.HasMember("perspective"))
+        int camera_index = node["camera"];
+        const auto &camera = cameras[camera_index].get();
+        if (!camera.contains("perspective"))
         {
             throw std::runtime_error("Found not perspective camera");
         }
         const auto &camera_params = camera["perspective"];
-        float fov_y = camera_params["yfov"].GetFloat();
+        float fov_y = camera_params["yfov"];
 
         return Camera(
             (matrix * glm::vec4(glm::vec3(0.f), 1.f)).xyz(),
@@ -72,74 +37,67 @@ static Camera readCamera(const NodeList &node_list, ConstJsonArray cameras, floa
     throw std::runtime_error("Can not find camera");
 }
 
-Scene Parser::parse(std::string path, int width, int height, int samples)
+Parser::Parser(std::filesystem::path path){
+    std::ifstream in(path);
+    if (!in.is_open()) {
+        throw std::runtime_error("File '" + path.string() + "' does not exists");
+    }
+    in >> json;
+
+    node_list = NodeList(json["nodes"]);
+    materials = readArray(json, "materials");
+    meshes = readArray(json, "meshes");
+    acessors = readArray(json, "accessors");
+    buffer_views = readArray(json, "bufferViews");
+    buffers = readArray(json, "buffers");
+    cameras = readArray(json, "cameras");
+
+    buffers_contents = readBuffersContents(
+        buffers,
+        std::filesystem::path(path).parent_path()
+    );
+}
+
+Scene Parser::parseScene(size_t width, size_t height, size_t samples)
 {
     const static int DEFAULT_RAY_DEPTH = 6;
 
-    std::ifstream in(path);
-    if (!in.is_open())
-    {
-        throw std::runtime_error("File '" + path + "' does not exists");
-    }
-    rapidjson::IStreamWrapper isw(in);
-
-    rapidjson::Document document;
-
-    if (document.ParseStream(isw).HasParseError())
-    {
-        throw std::runtime_error(
-            "rapidjson error: '" +
-            std::string(rapidjson::GetParseError_En(document.GetParseError())) +
-            "'");
-    }
-
     SceneSettings settings(width, height, glm::vec3(0.f), samples, DEFAULT_RAY_DEPTH);
 
-    NodeList node_list(readArray(document, "nodes"));
-    ConstJsonArray materials = readArray(document, "materials");
-    ConstJsonArray meshes = readArray(document, "meshes");
-    ConstJsonArray acessors = readArray(document, "accessors");
-    ConstJsonArray buffer_views = readArray(document, "bufferViews");
-    ConstJsonArray buffers = readArray(document, "buffers");
-
-    ConstJsonArray cameras = readArray(document, "cameras");
     Camera camera = readCamera(node_list, cameras, (float)width / height);
-
-    std::vector<std::vector<char>> buffers_contents = readBuffersContents(
-        buffers, std::filesystem::path(path).parent_path());
 
     std::vector<Triangle> primitives;
     for (size_t node_index = 0; node_index < node_list.size(); node_index++)
     {
         auto [node, translation] = node_list[node_index];
-        if (!node.HasMember("mesh")) {
+        if (!node.contains("mesh")) {
             continue;
         }
 
-        int mesh_index = node["mesh"].GetInt();
-        const rapidjson::Value &mesh = meshes[mesh_index];
-        ConstJsonArray mesh_primitives = mesh["primitives"].GetArray();
+        int mesh_index = node["mesh"];
+        const auto &mesh = meshes[mesh_index].get();
+        ConstJsonArray mesh_primitives = readArray(mesh, "primitives");
 
-        for (rapidjson::SizeType prim_index = 0; prim_index < mesh_primitives.Size(); prim_index++)
+        for (size_t prim_index = 0; prim_index < mesh_primitives.size(); prim_index++)
         {
-            const rapidjson::Value &primitive = mesh_primitives[prim_index];
-            int indexes_acessor_index = primitive["indices"].GetInt();
+            const auto &primitive = mesh_primitives[prim_index].get();
+            int indexes_acessor_index = primitive["indices"];
 
-            const rapidjson::Value &attributes = primitive["attributes"];
+            const auto &attributes = primitive["attributes"];
 
-            const rapidjson::Value &indexes_acessor = acessors[indexes_acessor_index];
+            const auto&indexes_acessor = acessors[indexes_acessor_index].get();
             std::vector<unsigned int> indexes = get_indexes(
                 read_acessor_data(buffer_views, buffers_contents, indexes_acessor));
 
-            int position_acessor_index = attributes["POSITION"].GetInt();
-            const rapidjson::Value &position_acessor = acessors[position_acessor_index];
+            int position_acessor_index = attributes["POSITION"];
+            const auto &position_acessor = acessors[position_acessor_index].get();
 
             std::vector<glm::vec3> points = get_points(
                 read_acessor_data(buffer_views, buffers_contents, position_acessor));
 
 
-            int normal_acessor_index = attributes["NORMAL"].GetInt();
-            const rapidjson::Value &normal_acessor = acessors[normal_acessor_index];
+            int normal_acessor_index = attributes["NORMAL"];
+            const auto &normal_acessor = acessors[normal_acessor_index].get();
 
             std::vector<glm::vec3> normals = get_normals(
                 read_acessor_data(buffer_views, buffers_contents, normal_acessor));
@@ -149,8 +107,8 @@ Scene Parser::parse(std::string path, int width, int height, int samples)
             }
 
             GltfMaterial new_material;
-            if (primitive.HasMember("material")) {
-                int material_index = primitive["material"].GetInt();
+            if (primitive.contains("material")) {
+                int material_index = primitive["material"];
                 new_material = GltfMaterial(materials[material_index]);
             }
 

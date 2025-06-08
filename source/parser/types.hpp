@@ -1,5 +1,6 @@
 #pragma once
-#include <rapidjson/document.h>
+#include <nlohmann/json.hpp>
+#include <functional>
 
-using ConstJsonArray = rapidjson::GenericArray<true, rapidjson::Value>;
+using ConstJsonArray = std::vector<std::reference_wrapper<const nlohmann::json> >;
 

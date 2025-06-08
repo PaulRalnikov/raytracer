@@ -1,23 +1,27 @@
 #include "utils.hpp"
 
 #include <fstream>
+#include <nlohmann/json.hpp>
 
-ConstJsonArray readArray(const rapidjson::Document& document, const char* name) {
-    const rapidjson::Value& value = document[name];
-    return value.GetArray();
+ConstJsonArray readArray(const nlohmann::json& json, const char* name) {
+    ConstJsonArray result;
+    for (const auto& node : json[name]) {
+        result.push_back(std::cref(node));
+    }
+    return result;
 }
 
 std::vector<std::vector<char>> readBuffersContents(
     ConstJsonArray buffers,
     std::filesystem::path buffers_dir_path)
 {
-    std::vector<std::vector<char>> result(buffers.Size());
-    for (rapidjson::SizeType i = 0; i < buffers.Size(); i++)
+    std::vector<std::vector<char>> result(buffers.size());
+    for (size_t i = 0; i < buffers.size(); i++)
     {
-        size_t byte_length = buffers[i]["byteLength"].GetUint();
+        size_t byte_length = buffers[i].get()["byteLength"];
         result[i].resize(byte_length);
 
-        std::string uri_name = buffers[i]["uri"].GetString();
+        std::string uri_name = buffers[i].get()["uri"];
         std::ifstream in(buffers_dir_path / uri_name, std::ios::binary);
         in.read(result[i].data(), byte_length);
     }

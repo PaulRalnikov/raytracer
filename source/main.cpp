@@ -2,7 +2,6 @@
 #include <chrono>
 #include <vector>
 #include <glm/glm.hpp>
-#include <rapidjson/writer.h>
 
 #include "scene/scene.hpp"
 #include "parser/parser.hpp"
@@ -36,9 +35,7 @@ int main(int argc, char *argv[])
 
     bool png_flag = (argc == DEFAULF_ARGC + 1 && std::string(argv[argc - 1]) == "--png");
 
-    Scene scene = Parser::parse(input_path, width, height, samples);
-    // Scene scene;
-    // scene.readTxt(input_path);
+    Scene scene = Parser(input_path).parseScene(width, height, samples);
 
     auto start = std::chrono::high_resolution_clock::now();
 

@@ -1,11 +1,11 @@
 #pragma once
-#include <rapidjson/document.h>
+#include <nlohmann/json.hpp>
 #include <vector>
 #include <filesystem>
 
 #include "types.hpp"
 
-ConstJsonArray readArray(const rapidjson::Document &document, const char *name);
+ConstJsonArray readArray(const nlohmann::json &json, const char *name);
 
 std::vector<std::vector<char>> readBuffersContents(
     ConstJsonArray buffers,

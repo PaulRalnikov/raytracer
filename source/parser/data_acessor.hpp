@@ -2,7 +2,7 @@
 #include <tuple>
 #include <vector>
 #include <string>
-#include <rapidjson/document.h>
+#include <glm/glm.hpp>
 
 #include "types.hpp"
 
@@ -12,5 +12,8 @@ using DataAcessor = std::tuple<std::vector<char>, std::string, int>;
 DataAcessor read_acessor_data(
     ConstJsonArray buffer_views,
     const std::vector<std::vector<char>> &buffers_contents,
-    const rapidjson::Value &acessor
-);
+    const nlohmann::json &acessor);
+
+std::vector<unsigned int> get_indexes(const DataAcessor& indexes_data);
+std::vector<glm::vec3> get_points(DataAcessor points_data);
+std::vector<glm::vec3> get_normals(DataAcessor normals_data);

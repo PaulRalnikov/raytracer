@@ -1,6 +1,6 @@
 #pragma once
 #include <glm/glm.hpp>
-#include <rapidjson/document.h>
+#include <nlohmann/json.hpp>
 
 struct GltfMaterial {
     glm::vec4 base_color_factor;
@@ -8,5 +8,5 @@ struct GltfMaterial {
     glm::vec3 emissive_factor;
 
     GltfMaterial();
-    GltfMaterial(const rapidjson::Value &material);
+    GltfMaterial(const nlohmann::json &material);
 };

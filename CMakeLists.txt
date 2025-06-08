@@ -3,15 +3,13 @@ set(CMAKE_CXX_STANDARD 23)
 
 project(render)
 
-find_package(OpenMP REQUIRED)
-
 file(GLOB_RECURSE src "source/*.cpp")
 
 include_directories(
     ${CMAKE_SOURCE_DIR}/source/
     ${CMAKE_SOURCE_DIR}/external/glm
     ${CMAKE_SOURCE_DIR}/external/stb
-    ${CMAKE_SOURCE_DIR}/external/rapidjson/include
+    ${CMAKE_SOURCE_DIR}/external/nlohmann_json/include/
 )
 
 add_definitions(-DGLM_ENABLE_EXPERIMENTAL -DGLM_FORCE_SWIZZLE)
