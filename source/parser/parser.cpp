@@ -7,55 +7,13 @@
 #include <rapidjson/error/en.h>
 
 #include "glm_parse.hpp"
+#include "utils/my_glm.hpp"
+#include "gltf_material.hpp"
 
 static ConstJsonArray readArray(const rapidjson::Document& document, const char* name) {
     const rapidjson::Value& value = document[name];
     return value.GetArray();
 }
-
-
-static inline glm::vec3 point_translate(glm::vec3 point, const glm::mat4x4 &translate) {
-    return (translate * glm::vec4(point, 1.f)).xyz();
-}
-
-static inline glm::vec3 vec_translate(glm::vec3 vec, const glm::mat4x4 &translate) {
-    return (translate * glm::vec4(vec, 0.f)).xyz();
-}
-
-struct NewMaterial {
-    glm::vec4 base_color_factor;
-    float metallic_factor;
-    glm::vec3 emissive_factor;
-
-    NewMaterial() : base_color_factor(1.f),
-                    metallic_factor(1),
-                    emissive_factor(0.f)
-    {}
-
-    NewMaterial(const rapidjson::Value &material) : NewMaterial(){
-        if (material.HasMember("emissiveFactor")) {
-            emissive_factor = vec3_from_array(material["emissiveFactor"].GetArray());
-        }
-        if (material.HasMember("extensions")) {
-            const rapidjson::Value &extensions = material["extensions"];
-            if (extensions.HasMember("KHR_materials_emissive_strength")) {
-                const rapidjson::Value &KHR_materials_emissive_strength = extensions["KHR_materials_emissive_strength"];
-                emissive_factor *= KHR_materials_emissive_strength["emissiveStrength"].GetFloat();
-            }
-        }
-
-        if (!material.HasMember("pbrMetallicRoughness")) {
-            return;
-        }
-        const rapidjson::Value &pbr_metallic_roughtness = material["pbrMetallicRoughness"];
-        if (pbr_metallic_roughtness.HasMember("baseColorFactor")) {
-            base_color_factor = vec4_from_array(pbr_metallic_roughtness["baseColorFactor"].GetArray());
-        }
-        if (pbr_metallic_roughtness.HasMember("metallicFactor")) {
-            metallic_factor = pbr_metallic_roughtness["metallicFactor"].GetFloat();
-        }
-    }
-};
 
 
 static std::vector<std::vector<char> > readBuffersContents(
@@ -277,18 +235,18 @@ Scene Parser::parse(std::string path, int width, int height, int samples)
                 throw std::runtime_error("Error: can not divide indexes into triangles; count: " + std::to_string(indexes.size()));
             }
 
-            NewMaterial new_material;
+            GltfMaterial new_material;
             if (primitive.HasMember("material")) {
                 int material_index = primitive["material"].GetInt();
-                new_material = NewMaterial(materials[material_index]);
+                new_material = GltfMaterial(materials[material_index]);
             }
 
             for (size_t index = 0; index < indexes.size(); index += 3) {
                 Triangle triangle;
                 for (size_t point_index = 0; point_index < 3; point_index++) {
-                    triangle.coords[point_index] = point_translate(points[indexes[index + point_index]], translation);
+                    triangle.coords[point_index] = translate_point(points[indexes[index + point_index]], translation);
                     triangle.normals[point_index] = glm::normalize(
-                        vec_translate(normals[indexes[index + point_index]], translation)
+                        translate_vector(normals[indexes[index + point_index]], translation)
                     );
                 }
 

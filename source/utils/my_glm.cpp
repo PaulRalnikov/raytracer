@@ -76,3 +76,11 @@ glm::vec3 pairwice_product(glm::vec3 v) {
 float sum(glm::vec3 v) {
     return v.x + v.y + v.z;
 }
+
+glm::vec3 translate_point(glm::vec3 point, const glm::mat4x4 &translate) {
+    return (translate * glm::vec4(point, 1.f)).xyz();
+}
+
+glm::vec3 translate_vector(glm::vec3 vec, const glm::mat4x4 &translate) {
+    return (translate * glm::vec4(vec, 0.f)).xyz();
+}
