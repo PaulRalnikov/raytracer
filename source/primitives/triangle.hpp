@@ -17,6 +17,9 @@ struct Triangle{
     float ior = 0.0; // only for diellectric materials
 
     glm::vec3 get_normal() const;
+
+    //return normal by baricentric coords
+    glm::vec3 get_interpolated_normal(glm::vec2 point_coords) const;
 };
 
 std::ifstream& operator>>(std::ifstream &in, Triangle &triangle);

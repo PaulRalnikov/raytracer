@@ -294,7 +294,9 @@ Scene Parser::parse(std::string path, int width, int height, int samples)
                 Triangle triangle;
                 for (size_t point_index = 0; point_index < 3; point_index++) {
                     triangle.coords[point_index] = point_translate(points[indexes[index + point_index]], translation);
-                    triangle.normals[point_index] = point_translate(normals[indexes[index + point_index]], translation);
+                    triangle.normals[point_index] = glm::normalize(
+                        vec_translate(normals[indexes[index + point_index]], translation)
+                    );
                 }
 
                 triangle.material = MaterialType::DIFFUSE;

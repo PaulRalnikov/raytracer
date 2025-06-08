@@ -64,11 +64,10 @@ glm::vec3 Scene::raytrace(Ray ray, pcg32_random_t &rng, int depth) const
         return m_background_color;
 
     const Triangle &triangle = intersection.value().second;
+    glm::vec3 inter = intersection.value().first;
+    glm::vec3 point = ray.position + ray.direction * inter.z;
 
-    float t = intersection.value().first.z; // ray position
-    glm::vec3 point = ray.position + ray.direction * t;
-
-    glm::vec3 normal = triangle.get_normal();
+    glm::vec3 normal = triangle.get_interpolated_normal(point.xy());
     static const float SHIFT = 1e-4;
 
     float normal_direction_cos = glm::dot(normal, ray.direction);
