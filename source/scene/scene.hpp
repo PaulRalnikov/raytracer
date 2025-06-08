@@ -5,12 +5,23 @@
 
 #include <glm/vec2.hpp>
 
-#include "primitives/primitive.hpp"
-#include "ray.hpp"
+#include "primitives/ray.hpp"
 #include "distribution/mix.hpp"
 #include "bvh/bvh.hpp"
+#include "parser/parser.hpp"
+
+class Parser;
+
+struct Camera {
+    glm::vec3 position;
+    glm::vec3 right;
+    glm::vec3 up;
+    glm::vec3 forward;
+    float fov_x, fov_y;
+};
 
 class Scene {
+    friend class Parser;
 public:
     void readTxt(std::string txt_path);
 
@@ -28,16 +39,12 @@ private:
 
     int m_width, m_height;
     glm::vec3 m_background_color;
-    glm::vec3 m_camera_position;
-    glm::vec3 m_camera_right;
-    glm::vec3 m_camera_up;
-    glm::vec3 m_camera_forward;
-    float m_fov_x, m_fov_y;
-    int max_ray_depth;
 
-    size_t samples; // rays count per pixel
+    int m_max_ray_depth;
+    Camera m_camera;
+    size_t m_samples; // rays count per pixel
 
-    BVH bvh;
-    MixDistribution mis_distribution;
+    BVH m_bvh;
+    MixDistribution m_mis_distribution;
 };
 

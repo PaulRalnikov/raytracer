@@ -7,7 +7,7 @@
 #include <tuple>
 
 #include "scene.hpp"
-#include "random.hpp"
+#include "utils/random.hpp"
 
 struct Task {
     explicit Task(int x = 0, int y = 0);

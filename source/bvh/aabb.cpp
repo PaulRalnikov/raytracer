@@ -8,8 +8,8 @@ AABB::AABB():
     }
 {}
 
-AABB::AABB(const Primitive &primitive) : AABB() {
-    extend(primitive);
+AABB::AABB(const Triangle &triangle): AABB() {
+    extend(triangle);
 }
 
 void AABB::extend(glm::vec3 point) {
@@ -22,32 +22,10 @@ void AABB::extend(const AABB& aabb) {
     borders[1] = glm::max(borders[1], aabb.borders[1]);
 }
 
-void AABB::extend(const Box& box) {
-    for (size_t i = 0; i < 8; i++) {
-        extend(box[i]);
-    }
-}
-
-void AABB::extend(const Ellipsoid& ellipsoid) {
-    Box box;
-    box.size = ellipsoid.radius;
-    box.position = ellipsoid.position;
-    box.rotation = ellipsoid.rotation;
-    extend(box);
-}
-
 void AABB::extend(const Triangle& triangle) {
     for (const glm::vec3& p : triangle.coords) {
         extend(p);
     }
-}
-
-void AABB::extend(const Plane& plane) {
-    throw std::runtime_error("Can not add plane to AABB");
-}
-
-void AABB::extend(const Primitive& primitive) {
-    std::visit([this](const auto& prim) {extend(prim);}, primitive);
 }
 
 glm::vec3 AABB::operator[](size_t idx) const {
@@ -77,7 +55,7 @@ std::ostream &operator<<(std::ostream &out, const AABB &aabb) {
     return out;
 }
 
-std::optional<float> iintersect(const Ray& ray, const AABB& aabb) {
+std::optional<float> intersect(const Ray& ray, const AABB& aabb) {
     glm::vec3 size = 0.5f * aabb.size();
     glm::vec3 center = aabb.center();
 

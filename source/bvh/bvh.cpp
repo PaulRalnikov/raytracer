@@ -1,44 +1,36 @@
 #include "bvh.hpp"
 #include <queue>
-#include "distribution/box.hpp"
-#include "distribution/ellipsoid.hpp"
+#include "primitives/triangle.hpp"
 #include "distribution/triangle.hpp"
 
-BVH::BVH(std::vector<Primitive>&& primitives):
-    m_primitives(std::move(primitives))
+BVH::BVH(std::vector<Triangle>&& primitives):
+    m_triangles(std::move(primitives))
 {
-
-    PrimitiveIterator planes_end = std::stable_partition(m_primitives.begin(), m_primitives.end(), [](const Primitive& v) {
-        return std::holds_alternative<Plane>(v);
-    });
-    size_t count_planes = planes_end - m_primitives.begin();
-
-    m_root = build(planes_end, m_primitives.end());
-    m_planes_end = m_primitives.begin() + count_planes;
+    m_root = build(m_triangles.begin(), m_triangles.end());
 }
 
-ConstPrimitiveIterator BVH::begin() const {
-    return m_primitives.begin();
+ConstTriangleIterator BVH::begin() const {
+    return m_triangles.begin();
 }
-ConstPrimitiveIterator BVH::end() const {
-    return m_primitives.end();
+ConstTriangleIterator BVH::end() const {
+    return m_triangles.end();
 }
 
 size_t BVH::size() const {
     return end() - begin();
 }
 
-const Primitive& BVH::operator[](size_t i) const {
-    return m_primitives[i];
+const Triangle& BVH::operator[](size_t i) const {
+    return m_triangles[i];
 }
 
 void static inline update_intersection(
     Intersection& intersection,
     std::optional<float> update,
-    const Primitive& primitive)
+    const Triangle& triangle)
 {
     if (update.has_value() && (!intersection.has_value() || update.value() < intersection.value().first)) {
-        intersection = std::make_pair(update.value(), std::cref(primitive));
+        intersection = std::make_pair(update.value(), std::cref(triangle));
     }
 }
 
@@ -50,19 +42,40 @@ static inline Intersection closesed(const Intersection &first, const Intersectio
     );
 }
 
-Intersection BVH::intersect(Ray ray, float max_distance) const
+Intersection BVH::iintersect(Ray ray, float max_distance) const
 {
-    Intersection intersection = {};
-    for (auto it = m_primitives.begin(); it < m_planes_end; it++) {
-        update_intersection(intersection, iintersect(ray, *it), *it);
+    Intersection result = {};
+
+    std::queue<size_t> queue;
+
+    auto add_to_queue = [this, &ray, &queue, &result](size_t node_idx) {
+        auto intersection = intersect(ray, m_nodes[node_idx].aabb);
+        if (intersection.has_value() && (!result.has_value() || intersection.value() < result.value().first)) {
+            queue.push(node_idx);
+        }
+    };
+
+    queue.push(m_root);
+    while (!queue.empty()) {
+        const Node& node = m_nodes[queue.front()];
+        queue.pop();
+
+        if (node.left_child != -1) {
+            add_to_queue(node.left_child);
+
+            assert(node.right_child != -1);
+            add_to_queue(node.right_child);
+        } else {
+            result = closesed(result, intersect_with_node(ray, node, max_distance));
+        }
     }
-    return closesed(intersection, intersect_with_nodes(ray, max_distance));
+    return result;
 }
 
-//number of primitives in <<left>> part and const of partion
+// cost of partion and number of primitives in <<left>> part
 using Partion = std::pair<float, size_t>;
 
-static Partion get_optimal_partion(ConstPrimitiveIterator begin, ConstPrimitiveIterator end) {
+static Partion get_optimal_partion(ConstTriangleIterator begin, ConstTriangleIterator end) {
     size_t count = end - begin;
     std::vector<float> prefix_area(count + 1, 0.f);
     std::vector<float> suffix_area(count + 1, 0.f);
@@ -91,7 +104,7 @@ static Partion get_optimal_partion(ConstPrimitiveIterator begin, ConstPrimitiveI
     return result;
 }
 
-size_t BVH::build(PrimitiveIterator begin, PrimitiveIterator end) {
+size_t BVH::build(TriangleIterator begin, TriangleIterator end) {
     const static size_t MIN_PARTION_COUNT = 3;
 
     m_nodes.push_back(Node(-1, -1, begin, end));
@@ -101,34 +114,34 @@ size_t BVH::build(PrimitiveIterator begin, PrimitiveIterator end) {
         return node_idx;
     }
 
-    auto x_copmarator = [](Primitive& first, Primitive& second) {
+    auto x_copmarator = [](Triangle& first, Triangle& second) {
         return AABB(first).center().x < AABB(second).center().x;
     };
     std::sort(begin, end, x_copmarator);
     Partion best_partion = get_optimal_partion(begin, end);
 
 
-    auto y_copmarator = [](Primitive& first, Primitive& second) {
+    auto y_copmarator = [](Triangle& first, Triangle& second) {
         return AABB(first).center().y < AABB(second).center().y;
     };
-    std::vector primitives_copy(begin, end);
-    std::sort(primitives_copy.begin(), primitives_copy.end(), y_copmarator);
+    std::vector triangles_copy(begin, end);
+    std::sort(triangles_copy.begin(), triangles_copy.end(), y_copmarator);
 
-    Partion partion = get_optimal_partion(primitives_copy.begin(), primitives_copy.end());
+    Partion partion = get_optimal_partion(triangles_copy.begin(), triangles_copy.end());
     if (partion < best_partion) {
         best_partion = partion;
-        std::copy(primitives_copy.begin(), primitives_copy.end(), begin);
+        std::copy(triangles_copy.begin(), triangles_copy.end(), begin);
     }
 
-    auto z_copmarator = [](Primitive &first, Primitive &second) {
+    auto z_copmarator = [](Triangle &first, Triangle &second) {
         return AABB(first).center().z < AABB(second).center().z;
     };
-    std::sort(primitives_copy.begin(), primitives_copy.end(), z_copmarator);
+    std::sort(triangles_copy.begin(), triangles_copy.end(), z_copmarator);
 
-    partion = get_optimal_partion(primitives_copy.begin(), primitives_copy.end());
+    partion = get_optimal_partion(triangles_copy.begin(), triangles_copy.end());
     if (partion < best_partion) {
         best_partion = partion;
-        std::copy(primitives_copy.begin(), primitives_copy.end(), begin);
+        std::copy(triangles_copy.begin(), triangles_copy.end(), begin);
     }
 
     if (partion.second == 0) {
@@ -140,77 +153,28 @@ size_t BVH::build(PrimitiveIterator begin, PrimitiveIterator end) {
     return node_idx;
 }
 
-Intersection BVH::intersect(
+Intersection BVH::intersect_with_node(
     const Ray& ray,
     const BVH::Node& node,
     float max_distance) const
 {
     Intersection intersection = {};
     for (auto it = node.begin; it < node.end; it++) {
-        update_intersection(intersection, iintersect(ray, *it), *it);
+        Triangle t = *it;
+        update_intersection(intersection, intersect(ray, t), *it);
     }
     return intersection;
 }
 
-Intersection BVH::intersect_with_nodes(const Ray& ray, float max_distance) const {
-    Intersection result = {};
-
-    std::queue<size_t> queue;
-
-    auto add_to_queue = [this, &ray, &queue, &result](size_t node_idx) {
-        auto intersection = iintersect(ray, m_nodes[node_idx].aabb);
-        if (intersection.has_value() && (!result.has_value() || intersection.value() < result.value().first)) {
-            queue.push(node_idx);
-        }
-    };
-
-    queue.push(m_root);
-    while (!queue.empty()) {
-        const Node& node = m_nodes[queue.front()];
-        queue.pop();
-
-        if (node.left_child != -1) {
-            add_to_queue(node.left_child);
-
-            assert(node.right_child != -1);
-            add_to_queue(node.right_child);
-        } else {
-            result = closesed(result, intersect(ray, node, max_distance));
-        }
-    }
-    return result;
-}
-
-static inline float get_primitive_pdf(const Ray& ray, const Primitive& primitive) {
-    std::optional<float> intersection = iintersect(ray, primitive);
+static inline float get_primitive_pdf(const Ray& ray, const Triangle& triangle) {
+    std::optional<float> intersection = intersect(ray, triangle);
 
     if (!intersection.has_value()) {
         return 0;
     }
 
     float ray_length = intersection.value();
-    struct Visitor
-    {
-        float operator()(const Box &box)
-        {
-            return ppdf(box, ray, ray_length);
-        };
-        float operator()(const Ellipsoid &ellipsoid)
-        {
-            return ppdf(ellipsoid, ray, ray_length);
-        };
-        float operator()(const Triangle &triangle)
-        {
-            return ppdf(triangle, ray, ray_length);
-        };
-        float operator()(const Plane& plane) {
-            return 0.f;
-        }
-
-        const Ray &ray;
-        float ray_length;
-    };
-    return std::visit(Visitor{ray, ray_length}, primitive);
+    return ppdf(triangle, ray, ray_length);
 }
 
 float BVH::pdf(const Ray& ray) const {
@@ -219,7 +183,7 @@ float BVH::pdf(const Ray& ray) const {
     std::queue<size_t> queue;
 
     auto add_to_queue = [this, &ray, &queue](size_t node_idx) {
-        auto intersection = iintersect(ray, m_nodes[node_idx].aabb);
+        auto intersection = intersect(ray, m_nodes[node_idx].aabb);
         if (intersection.has_value()) {
             queue.push(node_idx);
         }
@@ -241,10 +205,10 @@ float BVH::pdf(const Ray& ray) const {
             }
         }
     }
-    return sum / (m_primitives.end() - m_planes_end);
+    return sum / (m_triangles.end() - m_triangles.begin());
 }
 
-BVH::Node::Node(int left_child, int right_child, ConstPrimitiveIterator begin, ConstPrimitiveIterator end):
+BVH::Node::Node(int left_child, int right_child, ConstTriangleIterator begin, ConstTriangleIterator end):
     left_child(left_child), right_child(right_child), begin(begin), end(end)
 {
     for (auto it = begin; it < end; it++) {
