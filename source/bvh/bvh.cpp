@@ -26,17 +26,17 @@ const Triangle& BVH::operator[](size_t i) const {
 
 void static inline update_intersection(
     Intersection& intersection,
-    std::optional<float> update,
+    std::optional<glm::vec3> update,
     const Triangle& triangle)
 {
-    if (update.has_value() && (!intersection.has_value() || update.value() < intersection.value().first)) {
+    if (update.has_value() && (!intersection.has_value() || update.value().z < intersection.value().first.z)) {
         intersection = std::make_pair(update.value(), std::cref(triangle));
     }
 }
 
 static inline Intersection closesed(const Intersection &first, const Intersection &second) {
     return (
-        first.has_value() && (!second.has_value() || first.value().first < second.value().first)
+        first.has_value() && (!second.has_value() || first.value().first.z < second.value().first.z)
         ? first
         : second
     );
@@ -50,7 +50,7 @@ Intersection BVH::iintersect(Ray ray, float max_distance) const
 
     auto add_to_queue = [this, &ray, &queue, &result](size_t node_idx) {
         auto intersection = intersect(ray, m_nodes[node_idx].aabb);
-        if (intersection.has_value() && (!result.has_value() || intersection.value() < result.value().first)) {
+        if (intersection.has_value() && (!result.has_value() || intersection.value() < result.value().first.z)) {
             queue.push(node_idx);
         }
     };
@@ -167,13 +167,13 @@ Intersection BVH::intersect_with_node(
 }
 
 static inline float get_primitive_pdf(const Ray& ray, const Triangle& triangle) {
-    std::optional<float> intersection = intersect(ray, triangle);
+    std::optional<glm::vec3> intersection = intersect(ray, triangle);
 
     if (!intersection.has_value()) {
         return 0;
     }
 
-    float ray_length = intersection.value();
+    float ray_length = intersection.value().z;
     return ppdf(triangle, ray, ray_length);
 }
 

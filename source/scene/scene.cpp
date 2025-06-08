@@ -65,7 +65,7 @@ glm::vec3 Scene::raytrace(Ray ray, pcg32_random_t &rng, int depth) const
 
     const Triangle &triangle = intersection.value().second;
 
-    float t = intersection.value().first; // ray position
+    float t = intersection.value().first.z; // ray position
     glm::vec3 point = ray.position + ray.direction * t;
 
     glm::vec3 normal = triangle.get_normal();

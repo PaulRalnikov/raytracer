@@ -4,8 +4,6 @@
 #include "primitives/triangle.hpp"
 #include "bvh/bvh.hpp"
 
-std::optional<float> intersect(const Ray& ray, const Triangle& primitive);
-
 class MultiTriangleDistribution : public IDiirectionDistrudution {
 public:
     MultiTriangleDistribution(std::vector<Triangle>&& triangles);

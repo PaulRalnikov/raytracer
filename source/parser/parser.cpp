@@ -14,8 +14,12 @@ static ConstJsonArray readArray(const rapidjson::Document& document, const char*
 }
 
 
-static inline glm::vec3 translate(glm::vec3 point, const glm::mat4x4 &translate) {
+static inline glm::vec3 point_translate(glm::vec3 point, const glm::mat4x4 &translate) {
     return (translate * glm::vec4(point, 1.f)).xyz();
+}
+
+static inline glm::vec3 vec_translate(glm::vec3 vec, const glm::mat4x4 &translate) {
+    return (translate * glm::vec4(vec, 0.f)).xyz();
 }
 
 struct NewMaterial {
@@ -157,6 +161,17 @@ static std::vector<glm::vec3> get_points(AcessorData points_data) {
     return std::vector<glm::vec3>(begin, begin + data.size() / sizeof(glm::vec3));
 }
 
+static std::vector<glm::vec3> get_normals(AcessorData normals_data) {
+    auto [data, type, component_type] = normals_data;
+    if (type != "VEC3") {
+        throw std::runtime_error("Not VEC3 type in normal acessor: " + type);
+    }
+    if (get_size_in_bytes(component_type) != 4) {
+        throw std::runtime_error("Unexpected component type: want 4-bytes type, got " + component_type);
+    }
+    glm::vec3* begin = (glm::vec3*)data.data();
+    return std::vector<glm::vec3>(begin, begin + data.size() / sizeof(glm::vec3));
+}
 
 static Camera readCamera(const NodeList &node_list, ConstJsonArray cameras, float aspect_ratio) {
     Camera result;
@@ -257,6 +272,14 @@ Scene Parser::parse(std::string path, int width, int height, int samples)
 
             std::vector<glm::vec3> points = get_points(
                 read_acessor_data(buffer_views, buffers_contents, position_acessor));
+
+
+            int normal_acessor_index = attributes["NORMAL"].GetInt();
+            const rapidjson::Value &normal_acessor = acessors[normal_acessor_index];
+
+            std::vector<glm::vec3> normals = get_normals(
+                read_acessor_data(buffer_views, buffers_contents, normal_acessor));
+
             if (indexes.size() % 3 != 0) {
                 throw std::runtime_error("Error: can not divide indexes into triangles; count: " + std::to_string(indexes.size()));
             }
@@ -270,7 +293,8 @@ Scene Parser::parse(std::string path, int width, int height, int samples)
             for (size_t index = 0; index < indexes.size(); index += 3) {
                 Triangle triangle;
                 for (size_t point_index = 0; point_index < 3; point_index++) {
-                    triangle.coords[point_index] = translate(points[indexes[index + point_index]], translation);
+                    triangle.coords[point_index] = point_translate(points[indexes[index + point_index]], translation);
+                    triangle.normals[point_index] = point_translate(normals[indexes[index + point_index]], translation);
                 }
 
                 triangle.material = MaterialType::DIFFUSE;

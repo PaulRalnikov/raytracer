@@ -4,7 +4,7 @@
 #include "utils/random.hpp"
 #include "aabb.hpp"
 
-using Intersection = std::optional<std::pair<float, std::reference_wrapper<const Triangle>>>;
+using Intersection = std::optional<std::pair<glm::vec3, std::reference_wrapper<const Triangle>>>;
 using ConstTriangleIterator = std::vector<Triangle>::const_iterator;
 using TriangleIterator = std::vector<Triangle>::iterator;
 class BVH {

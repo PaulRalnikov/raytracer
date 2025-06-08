@@ -59,7 +59,7 @@ std::ostream &operator<<(std::ostream &out, const Triangle &triangle) {
     return out;
 }
 
-std::optional<float> intersect(const Ray& ray, const Triangle &triangle) {
+std::optional<glm::vec3> intersect(const Ray& ray, const Triangle &triangle) {
 
     //solve LES A + u * (B - A) + v * (C - A) = O + t * D
     // where [A, B, C] = triangle.coords
@@ -75,10 +75,9 @@ std::optional<float> intersect(const Ray& ray, const Triangle &triangle) {
     glm::vec3 B = ray.position - triangle.coords[0];
 
     glm::vec3 x = glm::inverse(A) * B;
-    float u = x.x, v = x.y, t = x.z;
 
-    if (u >= 0 && v >= 0 && u + v <= 1 && t >= 0) {
-        return t;
+    if (x.x >= 0 && x.y >= 0 && x.x + x.y <= 1 && x.z >= 0) {
+        return x;
     }
     return {};
 }
