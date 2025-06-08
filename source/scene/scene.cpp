@@ -14,16 +14,67 @@
 #include "utils/random.hpp"
 #include "task_pool.hpp"
 
-std::vector<std::vector<glm::vec3> > Scene::get_pixels() {
-    size_t tasks_count = m_width * m_height;
+Camera::Camera(
+    glm::vec3 a_position,
+    glm::vec3 a_right,
+    glm::vec3 a_up,
+    glm::vec3 a_forward,
+    float a_fov_x,
+    float a_fov_y
+):
+    position(a_position),
+    right(a_right),
+    up(a_up),
+    forward(a_forward),
+    fov_x(a_fov_x),
+    fov_y(a_fov_y)
+{}
+
+SceneSettings::SceneSettings(
+    size_t a_width,
+    size_t a_height,
+    glm::vec3 a_backgroud_color,
+    size_t a_samples,
+    size_t a_max_ray_depth
+):
+    width(a_width),
+    height(a_height),
+    background_color(a_backgroud_color),
+    samples(a_samples),
+    max_ray_depth(a_max_ray_depth)
+{}
+
+Scene::Scene(SceneSettings a_settings, std::vector<Triangle> &&a_primitives, Camera a_camera) : m_settings(a_settings),
+                                                                                                m_camera(a_camera),
+                                                                                                m_bvh(std::move(a_primitives)),
+                                                                                                m_mis_distribution()
+{
+    std::vector<Triangle> light_triangles;
+    for (const auto &el : m_bvh) {
+        if (el.emission != glm::vec3(0.0)) {
+            light_triangles.emplace_back(el);
+        }
+    }
+
+    m_mis_distribution.add_distribution(std::make_shared<CosWeighttedDistrubution>());
+    if (!light_triangles.empty()) {
+        m_mis_distribution.add_distribution(
+            std::make_shared<MultiTriangleDistribution>(std::move(light_triangles))
+        );
+    }
+}
+
+    std::vector<std::vector<glm::vec3>> Scene::get_pixels()
+{
+    size_t tasks_count = m_settings.width * m_settings.height;
     std::vector<Task> tasks;
     tasks.reserve(tasks_count);
 
-    std::vector<std::vector<std::future<glm::vec3> > > futures(m_height);
+    std::vector<std::vector<std::future<glm::vec3>>> futures(m_settings.height);
 
-    for (int y = 0; y < m_height; y++) {
-        futures[y].reserve(m_width);
-        for (int x = 0; x < m_width; x++) {
+    for (int y = 0; y < m_settings.height; y++) {
+        futures[y].reserve(m_settings.width);
+        for (int x = 0; x < m_settings.width; x++) {
             tasks.push_back(Task(x, y));
             futures[y].push_back(tasks.back().result.get_future());
         }
@@ -31,9 +82,9 @@ std::vector<std::vector<glm::vec3> > Scene::get_pixels() {
 
     auto pool = TaskPool(std::move(tasks), *this);
 
-    std::vector<std::vector<glm::vec3>> pixels(m_height, std::vector<glm::vec3>(m_width));
-    for (int y = 0; y < m_height; y++) {
-        for (int x = 0; x < m_width; x++) {
+    std::vector<std::vector<glm::vec3>> pixels(m_settings.height, std::vector<glm::vec3>(m_settings.width));
+    for (int y = 0; y < m_settings.height; y++) {
+        for (int x = 0; x < m_settings.width; x++) {
             pixels[y][x] = futures[y][x].get();
         }
     }
@@ -43,25 +94,25 @@ std::vector<std::vector<glm::vec3> > Scene::get_pixels() {
 glm::vec3 Scene::get_pixel_color(int x, int y, pcg32_random_t& rng) const
 {
     glm::vec3 color(0.0);
-    for (size_t i = 0; i < m_samples; i++)
+    for (size_t i = 0; i < m_settings.samples; i++)
     {
         glm::vec2 coords = glm::vec2(x, y) + random_vec2(glm::vec3(0), glm::vec2(1), rng);
         Ray ray = ray_to_pixel(coords);
         color += raytrace(ray, rng);
     }
-    color /= m_samples;
+    color /= m_settings.samples;
     return color;
 }
 
 glm::vec3 Scene::raytrace(Ray ray, pcg32_random_t &rng, int depth) const
 {
-    if (depth >= m_max_ray_depth)
+    if (depth >= m_settings.max_ray_depth)
     {
         return glm::vec3(0);
     }
     auto intersection = m_bvh.iintersect(ray);
     if (!intersection.has_value())
-        return m_background_color;
+        return m_settings.background_color;
 
     const Triangle &triangle = intersection.value().second;
     glm::vec3 inter = intersection.value().first;
@@ -150,13 +201,12 @@ glm::vec3 Scene::raytrace(Ray ray, pcg32_random_t &rng, int depth) const
 
 Ray Scene::ray_to_pixel(glm::vec2 pixel) const {
     float tan_fov_x_2 = tan(m_camera.fov_x / 2);
-    float tan_fov_y_2 = tan_fov_x_2 * m_height / (float)m_width;
+    float tan_fov_y_2 = tan_fov_x_2 * m_settings.height / (float)m_settings.width;
 
     glm::vec3 position(
-        (2 * pixel.x / m_width - 1) * tan_fov_x_2,
-        (-2 * pixel.y / m_height + 1) * tan_fov_y_2,
-        1
-    );
+        (2 * pixel.x / m_settings.width - 1) * tan_fov_x_2,
+        (-2 * pixel.y / m_settings.height + 1) * tan_fov_y_2,
+        1);
 
     glm::vec3 direction = glm::normalize(
         position.x * m_camera.right +
@@ -164,23 +214,4 @@ Ray Scene::ray_to_pixel(glm::vec2 pixel) const {
         position.z * m_camera.forward
     );
     return Ray(m_camera.position, direction);
-}
-
-void Scene::setup_distribution() {
-    // direct light sampling
-
-    std::vector<Triangle> light_triangles;
-    for (const auto &el : m_bvh) {
-        if (el.emission != glm::vec3(0.0)) {
-            light_triangles.emplace_back(el);
-        }
-    }
-
-    m_mis_distribution.add_distribution(std::make_shared<CosWeighttedDistrubution>());
-    if (!light_triangles.empty()) {
-        std::cout << "Added dis distribution" << std::endl;
-        m_mis_distribution.add_distribution(
-            std::make_shared<MultiTriangleDistribution>(std::move(light_triangles))
-        );
-    }
 }

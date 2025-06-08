@@ -8,9 +8,6 @@
 #include "primitives/ray.hpp"
 #include "distribution/mix.hpp"
 #include "bvh/bvh.hpp"
-#include "parser/parser.hpp"
-
-class Parser;
 
 struct Camera {
     glm::vec3 position;
@@ -18,11 +15,36 @@ struct Camera {
     glm::vec3 up;
     glm::vec3 forward;
     float fov_x, fov_y;
+
+    Camera(
+        glm::vec3 a_position,
+        glm::vec3 a_right,
+        glm::vec3 a_up,
+        glm::vec3 a_forward,
+        float a_fov_x,
+        float a_fov_y
+    );
+};
+
+struct SceneSettings{
+    size_t width, height;
+    glm::vec3 background_color;
+    size_t samples;
+    size_t max_ray_depth;
+
+    SceneSettings(
+        size_t a_width,
+        size_t a_height,
+        glm::vec3 a_backgroud_color,
+        size_t a_samples,
+        size_t a_max_ray_depth
+    );
 };
 
 class Scene {
-    friend class Parser;
 public:
+    Scene(SceneSettings a_settings, std::vector<Triangle> &&a_primitives, Camera a_camera);
+
     void readTxt(std::string txt_path);
 
     std::vector<std::vector<glm::vec3> > get_pixels();
@@ -35,14 +57,8 @@ private:
 
     Ray ray_to_pixel(glm::vec2 pixel) const;
 
-    void setup_distribution();
-
-    int m_width, m_height;
-    glm::vec3 m_background_color;
-
-    int m_max_ray_depth;
     Camera m_camera;
-    size_t m_samples; // rays count per pixel
+    SceneSettings m_settings;
 
     BVH m_bvh;
     MixDistribution m_mis_distribution;

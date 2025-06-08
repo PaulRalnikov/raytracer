@@ -5,6 +5,7 @@
 #include <rapidjson/writer.h>
 
 #include "scene/scene.hpp"
+#include "parser/parser.hpp"
 #include "utils/raw_pixels.hpp"
 
 std::string path_withoud_extention(std::string path) {

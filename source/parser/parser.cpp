@@ -174,32 +174,31 @@ static std::vector<glm::vec3> get_normals(AcessorData normals_data) {
 }
 
 static Camera readCamera(const NodeList &node_list, ConstJsonArray cameras, float aspect_ratio) {
-    Camera result;
     for (rapidjson::SizeType i = 0; i < node_list.size(); i++) {
         auto [node, matrix] = node_list[i];
         if (!node.HasMember("camera")){
             continue;
         }
 
-        result.right = (matrix * glm::vec4(1.0, 0.0, 0.0, 0.0)).xyz();
-        result.up = (matrix * glm::vec4(0.0, 1.0, 0.0, 0.0)).xyz();
-        result.forward = (matrix * glm::vec4(0.0, 0.0, -1.0, 0.0)).xyz();
-
-        result.position = (matrix * glm::vec4(glm::vec3(0.f), 1.f)).xyz();
-
         int camera_index = node["camera"].GetInt();
         const auto &camera = cameras[camera_index];
-        if (!camera.HasMember("perspective")) {
+        if (!camera.HasMember("perspective"))
+        {
             throw std::runtime_error("Found not perspective camera");
         }
-
         const auto &camera_params = camera["perspective"];
-        result.fov_y = camera_params["yfov"].GetFloat();
-        result.fov_x = atan(aspect_ratio * tan(result.fov_y / 2)) * 2;
+        float fov_y = camera_params["yfov"].GetFloat();
 
-        break;
+        return Camera(
+            (matrix * glm::vec4(glm::vec3(0.f), 1.f)).xyz(),
+            (matrix * glm::vec4(1.0, 0.0, 0.0, 0.0)).xyz(),
+            (matrix * glm::vec4(0.0, 1.0, 0.0, 0.0)).xyz(),
+            (matrix * glm::vec4(0.0, 0.0, -1.0, 0.0)).xyz(),
+            atan(aspect_ratio * tan(fov_y / 2)) * 2,
+            fov_y
+        );
     }
-    return result;
+    throw std::runtime_error("Can not find camera");
 }
 
 Scene Parser::parse(std::string path, int width, int height, int samples)
@@ -223,13 +222,7 @@ Scene Parser::parse(std::string path, int width, int height, int samples)
             "'");
     }
 
-    Scene scene;
-
-    scene.m_width = width;
-    scene.m_height = height;
-    scene.m_samples = samples;
-    scene.m_max_ray_depth = DEFAULT_RAY_DEPTH;
-    scene.m_background_color = glm::vec3(0.f);
+    SceneSettings settings(width, height, glm::vec3(0.f), samples, DEFAULT_RAY_DEPTH);
 
     NodeList node_list(readArray(document, "nodes"));
     ConstJsonArray materials = readArray(document, "materials");
@@ -239,7 +232,7 @@ Scene Parser::parse(std::string path, int width, int height, int samples)
     ConstJsonArray buffers = readArray(document, "buffers");
 
     ConstJsonArray cameras = readArray(document, "cameras");
-    scene.m_camera = readCamera(node_list, cameras, (float)width / height);
+    Camera camera = readCamera(node_list, cameras, (float)width / height);
 
     std::vector<std::vector<char>> buffers_contents = readBuffersContents(
         buffers, std::filesystem::path(path).parent_path());
@@ -315,8 +308,6 @@ Scene Parser::parse(std::string path, int width, int height, int samples)
             }
         }
     }
-    scene.m_bvh = BVH(std::move(primitives));
-    scene.setup_distribution();
 
-    return scene;
+    return Scene(settings, std::move(primitives), camera);
 }
